@@ -1,20 +1,24 @@
-import RevenueChart from '@/app/ui/dashboard/revenue-chart';
-import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
+import { SessionProvider } from 'next-auth/react';
+import LeaguesByUser from '@/app/ui/dashboard/list-leagues';
 import { lusitana } from '@/app/ui/fonts';
 import { Suspense } from 'react';
+
 import {
   CardsSkeleton,
   LatestInvoicesSkeleton,
   RevenueChartSkeleton,
 } from '@/app/ui/skeletons';
 import CardWrapper from '@/app/ui/dashboard/cards';
+import { auth } from '@/auth';
 
 export default async function Page() {
+  const session = await auth();
   return (
     <main>
       <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
         Dashboard
       </h1>
+      {/*
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Suspense fallback={<CardsSkeleton />}>
           <CardWrapper />
@@ -24,9 +28,10 @@ export default async function Page() {
         <Suspense fallback={<RevenueChartSkeleton />}>
           <RevenueChart />
         </Suspense>
-
+  */}
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
         <Suspense fallback={<LatestInvoicesSkeleton />}>
-          <LatestInvoices />
+          <LeaguesByUser email={session?.user?.email || 'ojete'} />
         </Suspense>
       </div>
     </main>

@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+  padelmanager-postgres:
+    image: 'postgres:15'
+    command: postgres -c max_locks_per_transaction=256
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: 'padelmanager'
+      POSTGRES_PASSWORD: 'p@delmanager'
+      POSTGRES_DB: 'padelmanagerdb'
+    networks:
+      - padelmanager
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: local@localhost.com
+      PGADMIN_DEFAULT_PASSWORD: local
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '81:80'
+    networks:
+      - padelmanager
+networks:
+  padelmanager:
+    driver: bridge

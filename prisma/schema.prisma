@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String    @id @default(uuid())
+  email    String @unique
+  name     String
+  password String
+  driveTeams    Team[] @relation(name: "driveTeams")
+  reverseTeams    Team[] @relation(name: "reverseTeams")
+  leaguesAdmins    League[] @relation(name: "leagueAdmin")
+  participant    Participates[]
+}
+
+
+model Participates {
+  participant    User @relation(fields: [participantId], references: [id])
+  participantId  String
+  league    League @relation(fields: [leagueId], references: [id])
+  leagueId  String
+
+  @@id([participantId, leagueId])
+}
+
+
+model League {
+  id       String    @id @default(uuid())
+  name    String
+  admin    User @relation(fields: [adminId], references: [id],name: "leagueAdmin")
+  adminId  String
+  participants    Participates[] 
+  matches    Match[]
+  @@unique([adminId, name])
+}
+
+
+model Team {
+  id       String    @id @default(uuid())
+  drive    User @relation(fields: [driveId], references: [id],name: "driveTeams")
+  reverse   User    @relation( fields: [reversId], references: [id],name: "reverseTeams")
+  driveId  String
+  reversId String
+
+  @@unique([driveId, reversId])
+  @@unique([ reversId, driveId])
+  playAsLocal    Match[] @relation(name: "playAsLocal")
+  playAsVisitor    Match[] @relation(name: "playAsVisitor")
+}
+
+model Match {
+  id       String    @id @default(uuid())
+  localTeam    Team @relation(fields: [localId], references: [id],name: "playAsLocal")
+  visitorTeam   Team    @relation( fields: [visitorId], references: [id],name: "playAsVisitor")
+  localId  String
+  visitorId String
+  sets Set[]
+  date DateTime
+  league    League @relation(fields: [leagueId], references: [id])
+  leagueId  String
+}
+
+model Set {
+  id       String    @id @default(uuid())
+  match    Match @relation(fields: [matchId], references: [id])
+  matchId  String
+  visitorScore Int
+  localScore Int
+  setNumber Int
+  localWins Boolean
+  localTieBreak Int
+  visitorTieBreak Int
+  @@unique([matchId, setNumber])
+}

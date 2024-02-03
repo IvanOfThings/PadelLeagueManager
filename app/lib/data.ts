@@ -4,12 +4,13 @@ import {
   CustomersTableType,
   InvoiceForm,
   InvoicesTable,
-  LatestInvoiceRaw,
+  League,
   User,
   Revenue,
 } from './definitions';
 import { formatCurrency } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
+import { getPrismaInstance } from './prisma';
 
 export async function fetchRevenue() {
   // Add noStore() here to prevent the response from being cached.
@@ -34,24 +35,36 @@ export async function fetchRevenue() {
   }
 }
 
-export async function fetchLatestInvoices() {
+export async function fetchLeaguesByUser(email: string): Promise<League[]> {
   noStore();
   try {
-    const data = await sql<LatestInvoiceRaw>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`;
+    const prisma = getPrismaInstance();
+    const user = await getUser(email);
+    if (!user) {
+      throw new Error('Failed to fetch Leagues for the user.');
+    }
+    const participates = await prisma.participates.findMany({
+      where: { participantId: user.id },
+    });
 
-    const latestInvoices = data.rows.map((invoice) => ({
-      ...invoice,
-      amount: formatCurrency(invoice.amount),
-    }));
-    return latestInvoices;
+    const leagues = await prisma.league.findMany({
+      where: { id: { in: participates.map((p) => p.leagueId) } },
+    });
+
+    const myLeagues = await Promise.all(
+      leagues.map(async (league): Promise<League> => {
+        return {
+          ...league,
+          participants: await prisma.participates.count({
+            where: { leagueId: league.id },
+          }),
+        };
+      }),
+    );
+    return myLeagues;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch the latest invoices.');
+    throw new Error('Failed to fetch Leagues for the user.');
   }
 }
 
@@ -228,10 +241,17 @@ export async function fetchFilteredCustomers(query: string) {
   }
 }
 
-export async function getUser(email: string) {
+export async function getUser(email: string): Promise<User | undefined> {
   try {
-    const user = await sql`SELECT * FROM users WHERE email=${email}`;
-    return user.rows[0] as User;
+    const prisma = getPrismaInstance();
+    console.log('Fetching user:', email);
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error('Failed to fetch user.');
+    }
+    return [user].map((u): User => {
+      return { id: u.id, name: u.name, email: u.email, password: u.password };
+    })[0];
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');

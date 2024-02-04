@@ -1,6 +1,7 @@
 import { PrismaClient, User } from '@prisma/client';
 import { users, leagues, teams, matches, sets } from './placeholder-data-padel';
 import bcrypt from 'bcrypt';
+import { UpdateScores } from '@/app/lib/dao/update';
 
 const prisma = new PrismaClient();
 // use `prisma` in your application to read and write data in your DB
@@ -39,4 +40,5 @@ const prisma = new PrismaClient();
   await prisma.team.createMany({ data: teams });
   await prisma.match.createMany({ data: matches });
   await prisma.set.createMany({ data: sets });
+  await UpdateScores(leagues[0].id);
 })();

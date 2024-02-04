@@ -1,9 +1,9 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
-import { lusitana } from '@/app/ui/fonts';
 import { fetchLeaguesByUser } from '@/app/lib/data';
-export default async function LeaguesByUser({ email }: { email: string }) {
-  const myLeagues = await fetchLeaguesByUser(email);
+import Link from 'next/link';
+export default async function MyLeagues() {
+  const myLeagues = await fetchLeaguesByUser();
   return (
     <div className="flex w-full flex-col md:col-span-4">
       <h2 className={` mb-4 text-xl md:text-2xl`}>Mis Ligas</h2>
@@ -46,11 +46,12 @@ export default async function LeaguesByUser({ email }: { email: string }) {
                   />
                 */}
                   <div className="min-w-0">
-                    <p
-                      className={`${lusitana.className} truncate text-sm font-semibold md:text-base`}
+                    <Link
+                      href={`/dashboard/leagues/${league.id}`}
+                      className="truncate text-sm font-medium hover:text-blue-400 md:text-base"
                     >
                       {league.name}
-                    </p>
+                    </Link>
                     {/*
                     <p className="hidden text-sm text-gray-500 sm:block">
                       {invoice.email}
@@ -58,9 +59,7 @@ export default async function LeaguesByUser({ email }: { email: string }) {
               */}
                   </div>
                 </div>
-                <p
-                  className={`${lusitana.className} truncate text-sm font-medium md:text-base`}
-                >
+                <p className={`truncate text-sm font-medium md:text-base`}>
                   {league.participants}
                 </p>
               </div>

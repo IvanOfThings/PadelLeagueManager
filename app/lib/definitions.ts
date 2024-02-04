@@ -6,7 +6,12 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  password: string;
+};
+
+export type LeagueParticipant = {
+  user: User;
+  leagueId: string;
+  score: Score;
 };
 
 export type Customer = {
@@ -78,4 +83,30 @@ export type InvoiceForm = {
   customer_id: string;
   amount: number;
   status: 'pending' | 'paid';
+};
+
+export type Score = {
+  playedMatches: number;
+  winMatches: number;
+  points: number;
+};
+
+export type Set = {
+  id: string;
+  matchId: string;
+  visitorScore: number;
+  localScore: number;
+  setNumber: number;
+  localWins: boolean;
+  localTieBreak: number;
+  visitorTieBreak: number;
+};
+
+export type Match = {
+  id: string;
+  teamLocal: { drive: User; reverse: User };
+  teamVisitor: { drive: User; reverse: User };
+  date: Date;
+  localWins: boolean;
+  results: Set[];
 };

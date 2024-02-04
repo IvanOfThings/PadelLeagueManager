@@ -1,16 +1,21 @@
+'use server';
+
 import { sql } from '@vercel/postgres';
 import {
   CustomerField,
   CustomersTableType,
   InvoiceForm,
-  InvoicesTable,
   League,
   User,
   Revenue,
+  LeagueParticipant,
+  Match,
 } from './definitions';
 import { formatCurrency } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
-import { getPrismaInstance } from './prisma';
+import { PrismaSingleton } from './prisma';
+import { auth } from '@/auth';
+import { fetchLeagueParticipants, fetchTeamsFromMatches } from './dao/update';
 
 export async function fetchRevenue() {
   // Add noStore() here to prevent the response from being cached.
@@ -34,12 +39,39 @@ export async function fetchRevenue() {
     throw new Error('Failed to fetch revenue data.');
   }
 }
+export async function fetchLeagueById(leagueId: string): Promise<League> {
+  noStore();
 
-export async function fetchLeaguesByUser(email: string): Promise<League[]> {
+  try {
+    const prisma = PrismaSingleton.getInstance();
+
+    const league = await prisma.league.findFirstOrThrow({
+      where: { id: leagueId },
+    });
+
+    console.log('Data fetch completed after 3 seconds.');
+    return {
+      ...league,
+      participants: await prisma.participates.count({
+        where: { leagueId: league.id },
+      }),
+    };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch revenue data.');
+  }
+}
+
+export async function fetchLeaguesByUser(): Promise<League[]> {
   noStore();
   try {
-    const prisma = getPrismaInstance();
-    const user = await getUser(email);
+    const session = await auth();
+    const prisma = PrismaSingleton.getInstance();
+    const userMail = session?.user?.email;
+    if (!userMail) {
+      throw new Error('Failed to fetch Leagues for the user.');
+    }
+    const user = await getUser(userMail);
     if (!user) {
       throw new Error('Failed to fetch Leagues for the user.');
     }
@@ -104,42 +136,30 @@ export async function fetchCardData() {
   }
 }
 
-const ITEMS_PER_PAGE = 6;
-export async function fetchFilteredInvoices(
-  query: string,
-  currentPage: number,
-) {
+/*
+export async function fetchParticipants(leagueId: string): Promise<User[]> {
   noStore();
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
   try {
-    const invoices = await sql<InvoicesTable>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
+    const prisma = getPrismaInstance();
+    const participants = await prisma.participates.findMany({
+      where: { leagueId },
+    });
+    const participantsData = await prisma.user.findMany({
+      where: { id: { in: participants.map((p) => p.participantId) } },
+    });
 
-    return invoices.rows;
+    return participantsData.map(
+      (p): User => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+      }),
+    );
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoices.');
   }
-}
+}*/
 
 export async function fetchInvoicesPages(query: string) {
   noStore();
@@ -155,7 +175,7 @@ export async function fetchInvoicesPages(query: string) {
       invoices.status ILIKE ${`%${query}%`}
   `;
 
-    const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(Number(count.rows[0].count) / 10);
     return totalPages;
   } catch (error) {
     console.error('Database Error:', error);
@@ -243,17 +263,103 @@ export async function fetchFilteredCustomers(query: string) {
 
 export async function getUser(email: string): Promise<User | undefined> {
   try {
-    const prisma = getPrismaInstance();
+    const prisma = PrismaSingleton.getInstance();
     console.log('Fetching user:', email);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new Error('Failed to fetch user.');
     }
     return [user].map((u): User => {
-      return { id: u.id, name: u.name, email: u.email, password: u.password };
+      return { id: u.id, name: u.name, email: u.email };
     })[0];
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
   }
+}
+
+export async function fetchParticipants(leagueId: string) {
+  return fetchLeagueParticipants(leagueId);
+}
+
+export async function fetchLeagueAndParticipants(
+  leagueId: string,
+): Promise<{ league: League; sortedParticipants: LeagueParticipant[] }> {
+  const league = await fetchLeagueById(leagueId);
+  const participants = await fetchLeagueParticipants(leagueId);
+  const sortedParticipants = Object.values(participants).sort(
+    (a: LeagueParticipant, b: LeagueParticipant) => {
+      if (a.score.points > b.score.points) {
+        return -1;
+      } else if (a.score.points < b.score.points) {
+        return 1;
+      }
+      if (a.score.playedMatches < b.score.winMatches) {
+        return -1;
+      }
+      return 1;
+    },
+  );
+  return { league, sortedParticipants };
+}
+
+export async function fetchUsers(userIds: string[]): Promise<User[]> {
+  const prisma = PrismaSingleton.getInstance();
+  const players = await prisma.user.findMany({
+    where: {
+      id: {
+        in: userIds,
+      },
+    },
+  });
+  return players.map((player) => {
+    return { id: player.id, name: player.name, email: player.email };
+  });
+}
+
+export async function fetchMatches(leagueId: string): Promise<Match[]> {
+  const prisma = PrismaSingleton.getInstance();
+  const matches = await prisma.match.findMany({
+    where: { leagueId: leagueId },
+  });
+  const teams = await fetchTeamsFromMatches(matches);
+  const userIds = teams.reduce((acc, curr) => {
+    acc.push(curr.driveId);
+    acc.push(curr.reversId);
+    return acc;
+  }, new Array<string>());
+  const players = await fetchUsers(userIds);
+
+  const res = await Promise.all(
+    matches.map(async (match): Promise<Match> => {
+      const local = teams.find((team) => team.id === match.localId);
+      if (!local) throw new Error('Failed to fetch local team');
+      const visitor = teams.find((team) => team.id === match.visitorId);
+      if (!visitor) throw new Error('Failed to fetch local team');
+      const localDrive = players.filter(
+        (player) => player.id === local.driveId,
+      );
+      const localReverse = players.filter(
+        (player) => player.id === local.reversId,
+      );
+      const visitorDrive = players.filter(
+        (player) => player.id === visitor.driveId,
+      );
+      const visitorReverse = players.filter(
+        (player) => player.id === visitor.reversId,
+      );
+      return {
+        id: match.id,
+        date: match.date,
+        localWins: match.localWins,
+        teamLocal: { drive: localDrive[0], reverse: localReverse[0] },
+        teamVisitor: { drive: visitorDrive[0], reverse: visitorReverse[0] },
+        results: await prisma.set.findMany({ where: { matchId: match.id } }),
+      };
+    }),
+  );
+  return res.sort((a, b) => {
+    if (a.date < b.date) return -1;
+    else return 1;
+  });
 }

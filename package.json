@@ -4,6 +4,7 @@
     "build": "next build",
     "dev": "next dev",
     "init-prisma": "npx prisma migrate dev --name init",
+    "postinstall": "prisma generate",
     "install:deno:mac": "curl -fsSL https://deno.land/install.sh | sh",
     "prettier": "prettier --write --ignore-unknown .",
     "prettier:check": "prettier --check --ignore-unknown .",

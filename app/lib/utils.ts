@@ -1,4 +1,5 @@
-import { Revenue } from './definitions';
+import { Match, Revenue, User } from './definitions';
+import { v4 as uuidv4 } from 'uuid';
 
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {
@@ -66,4 +67,61 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     '...',
     totalPages,
   ];
+};
+
+export const generateMatching = (players: User[]) => {
+  const shuffledPlayers = shuffle(players);
+
+  return shuffledPlayers;
+};
+
+export const buildMatchesFromList = (
+  players: User[],
+  leagueId: string,
+  rounds: number,
+  date: Date,
+): Match[][] => {
+  const matches: Match[][] = [];
+  for (let i = 0; i < rounds; i++) {
+    const round = new Array<Match>();
+    for (let j = 0; j < players.length; j += 4) {
+      round.push({
+        leagueId,
+        date: date,
+        localWins: false,
+        teamLocal: {
+          drive: players[j],
+          reverse: players[j + 1],
+        },
+        teamVisitor: { drive: players[j + 2], reverse: players[j + 3] },
+        results: [],
+        finished: false,
+        id: uuidv4(),
+        confirmed: false,
+        round: i + 1,
+      });
+    }
+    matches.push(round);
+  }
+  return matches;
+};
+
+const shuffle = <T>(array: T[]): T[] => {
+  let currentIndex = array.length,
+    randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex > 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
+  }
+
+  return array;
 };

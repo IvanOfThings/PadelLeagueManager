@@ -1,14 +1,14 @@
 import { Match, Team } from '@prisma/client';
 import { LeagueParticipant } from '../definitions';
-import { PrismaSingleton } from '../prisma';
+import prisma from '../prisma';
+import { fetchTeamsFromMatches } from './teams';
 
 export async function UpdateScores(leagueId: string): Promise<void> {
   try {
-    const prisma = PrismaSingleton.getInstance();
     const participants = await fetchLeagueParticipants(leagueId);
 
     const matches = await prisma.match.findMany({
-      where: { leagueId },
+      where: { leagueId, confirmed: true },
     });
 
     if (!matches) {
@@ -41,8 +41,6 @@ export async function UpdateScores(leagueId: string): Promise<void> {
 export async function fetchLeagueParticipants(
   leagueId: string,
 ): Promise<Record<string, LeagueParticipant>> {
-  const prisma = PrismaSingleton.getInstance();
-
   const participants = await prisma.participates.findMany({
     where: { leagueId },
   });
@@ -72,26 +70,6 @@ export async function fetchLeagueParticipants(
     {} as Record<string, LeagueParticipant>,
   );
   return leagueParticipants;
-}
-
-export async function fetchTeamsFromMatches(
-  matches: {
-    visitorId: string;
-    localId: string;
-  }[],
-): Promise<Team[]> {
-  const prisma = PrismaSingleton.getInstance();
-
-  const teamsThatPlayed = matches.reduce((acc, curr) => {
-    acc.push(curr.localId);
-    acc.push(curr.visitorId);
-    return acc;
-  }, [] as Array<string>);
-
-  const teams = await prisma.team.findMany({
-    where: { id: { in: teamsThatPlayed } },
-  });
-  return teams;
 }
 
 function updateParticipantScore(

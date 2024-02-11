@@ -1,12 +1,21 @@
 // This file contains type definitions for your data.
 // It describes the shape of the data, and what data type each property should accept.
 // For simplicity of teaching, we're manually defining these types.
+
+import { type } from 'os';
+
 // However, these types are generated automatically if you're using an ORM such as Prisma.
+export type UserWithPassword = {
+  password: string;
+} & User;
+
 export type User = {
   id: string;
   name: string;
   email: string;
 };
+
+export type Team = { drive: User; reverse: User; id: string | null };
 
 export type LeagueParticipant = {
   user: User;
@@ -103,10 +112,14 @@ export type Set = {
 };
 
 export type Match = {
+  leagueId: string;
   id: string;
   teamLocal: { drive: User; reverse: User };
   teamVisitor: { drive: User; reverse: User };
   date: Date;
-  localWins: boolean;
+  localWins?: boolean;
   results: Set[];
+  finished: boolean;
+  confirmed: boolean;
+  round: number;
 };

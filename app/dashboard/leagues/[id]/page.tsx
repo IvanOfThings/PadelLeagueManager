@@ -1,15 +1,12 @@
 import { lusitana } from '@/app/ui/fonts';
 import { Suspense } from 'react';
 
-import {
-  CardsSkeleton,
-  LatestInvoicesSkeleton,
-  RevenueChartSkeleton,
-} from '@/app/ui/skeletons';
+import { LatestInvoicesSkeleton } from '@/app/ui/skeletons';
 import { auth } from '@/auth';
 import ParticipantsTable from '@/app/ui/leagues/table-participants';
-import { fetchLeagueAndParticipants, fetchMatches } from '@/app/lib/data';
+import { fetchLeagueAndParticipants } from '@/app/lib/data';
 import MatchesTable from '@/app/ui/leagues/table-matches';
+import { fetchMatches } from '@/app/lib/dao/matches';
 
 export default async function Page({ params }: { params: { id: string } }) {
   const { league, sortedParticipants } = await fetchLeagueAndParticipants(
@@ -34,12 +31,16 @@ export default async function Page({ params }: { params: { id: string } }) {
   */}
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
         <Suspense fallback={<LatestInvoicesSkeleton />}>
-          <ParticipantsTable participants={sortedParticipants} />
+          <ParticipantsTable
+            participants={sortedParticipants}
+            leagueId={params.id}
+          />
         </Suspense>
       </div>
+
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
         <Suspense fallback={<LatestInvoicesSkeleton />}>
-          <MatchesTable matches={matches} />
+          <MatchesTable matches={matches} leagueId={params.id} />
         </Suspense>
       </div>
     </main>

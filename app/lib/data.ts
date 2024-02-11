@@ -13,9 +13,9 @@ import {
 } from './definitions';
 import { formatCurrency } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
-import { PrismaSingleton } from './prisma';
+import prisma from './prisma';
 import { auth } from '@/auth';
-import { fetchLeagueParticipants, fetchTeamsFromMatches } from './dao/update';
+import { fetchLeagueParticipants } from './dao/lueague';
 
 export async function fetchRevenue() {
   // Add noStore() here to prevent the response from being cached.
@@ -39,12 +39,11 @@ export async function fetchRevenue() {
     throw new Error('Failed to fetch revenue data.');
   }
 }
+
 export async function fetchLeagueById(leagueId: string): Promise<League> {
   noStore();
 
   try {
-    const prisma = PrismaSingleton.getInstance();
-
     const league = await prisma.league.findFirstOrThrow({
       where: { id: leagueId },
     });
@@ -66,7 +65,6 @@ export async function fetchLeaguesByUser(): Promise<League[]> {
   noStore();
   try {
     const session = await auth();
-    const prisma = PrismaSingleton.getInstance();
     const userMail = session?.user?.email;
     if (!userMail) {
       throw new Error('Failed to fetch Leagues for the user.');
@@ -263,7 +261,6 @@ export async function fetchFilteredCustomers(query: string) {
 
 export async function getUser(email: string): Promise<User | undefined> {
   try {
-    const prisma = PrismaSingleton.getInstance();
     console.log('Fetching user:', email);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -303,8 +300,16 @@ export async function fetchLeagueAndParticipants(
   return { league, sortedParticipants };
 }
 
+export async function fetchPlayersByLeague(leagueId: string): Promise<User[]> {
+  const participantIds = await prisma.participates.findMany({
+    where: {
+      leagueId: leagueId,
+    },
+  });
+  return fetchUsers(participantIds.map((p) => p.participantId));
+}
+
 export async function fetchUsers(userIds: string[]): Promise<User[]> {
-  const prisma = PrismaSingleton.getInstance();
   const players = await prisma.user.findMany({
     where: {
       id: {
@@ -312,54 +317,10 @@ export async function fetchUsers(userIds: string[]): Promise<User[]> {
       },
     },
   });
+  if (userIds.length === 0) {
+    throw new Error('Failed to fetch users');
+  }
   return players.map((player) => {
     return { id: player.id, name: player.name, email: player.email };
-  });
-}
-
-export async function fetchMatches(leagueId: string): Promise<Match[]> {
-  const prisma = PrismaSingleton.getInstance();
-  const matches = await prisma.match.findMany({
-    where: { leagueId: leagueId },
-  });
-  const teams = await fetchTeamsFromMatches(matches);
-  const userIds = teams.reduce((acc, curr) => {
-    acc.push(curr.driveId);
-    acc.push(curr.reversId);
-    return acc;
-  }, new Array<string>());
-  const players = await fetchUsers(userIds);
-
-  const res = await Promise.all(
-    matches.map(async (match): Promise<Match> => {
-      const local = teams.find((team) => team.id === match.localId);
-      if (!local) throw new Error('Failed to fetch local team');
-      const visitor = teams.find((team) => team.id === match.visitorId);
-      if (!visitor) throw new Error('Failed to fetch local team');
-      const localDrive = players.filter(
-        (player) => player.id === local.driveId,
-      );
-      const localReverse = players.filter(
-        (player) => player.id === local.reversId,
-      );
-      const visitorDrive = players.filter(
-        (player) => player.id === visitor.driveId,
-      );
-      const visitorReverse = players.filter(
-        (player) => player.id === visitor.reversId,
-      );
-      return {
-        id: match.id,
-        date: match.date,
-        localWins: match.localWins,
-        teamLocal: { drive: localDrive[0], reverse: localReverse[0] },
-        teamVisitor: { drive: visitorDrive[0], reverse: visitorReverse[0] },
-        results: await prisma.set.findMany({ where: { matchId: match.id } }),
-      };
-    }),
-  );
-  return res.sort((a, b) => {
-    if (a.date < b.date) return -1;
-    else return 1;
   });
 }

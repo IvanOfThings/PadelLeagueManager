@@ -1,7 +1,15 @@
 import { Match } from '@/app/lib/definitions';
 import TableTitle from '../table-title';
+import Link from 'next/link';
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
-export default async function MatchesTable({ matches }: { matches: Match[] }) {
+export default async function MatchesTable({
+  matches,
+  leagueId,
+}: {
+  matches: Match[];
+  leagueId: string;
+}) {
   return (
     <div className="mt-6 flow-root">
       <div className="inline-block min-w-full align-middle">
@@ -61,12 +69,32 @@ export default async function MatchesTable({ matches }: { matches: Match[] }) {
                     })}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    <p>{match.localWins ? `Local` : `Visitante`}</p>
+                    {match.finished ? (
+                      <p>{match.localWins ? `Local` : `Visitante`}</p>
+                    ) : (
+                      <Link
+                        href={`/dashboard/leagues/${leagueId}/matches/${match.id}/resolve`}
+                        className="flex items-center gap-5 self-start rounded-lg bg-blue-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-400 md:text-base"
+                      >
+                        <span>Resolve</span>{' '}
+                        <ArrowRightIcon className="w-5 md:w-6" />
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <div className="py-3 ">
+            <Link
+              href={`/dashboard/leagues/${leagueId}/matches/confirm`}
+              className="flex items-center gap-5 self-start rounded-lg bg-blue-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-400 md:text-base"
+            >
+              Confirmar Partidos Pendientes
+              <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

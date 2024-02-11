@@ -1,11 +1,16 @@
 import { fetchLeagueAndParticipants, fetchLeagueById } from '@/app/lib/data';
 import { LeagueParticipant } from '@/app/lib/definitions';
 import TableTitle from '../table-title';
+import { Button } from '../button';
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 export default async function ParticipantsTable({
   participants,
+  leagueId,
 }: {
   participants: LeagueParticipant[];
+  leagueId: string;
 }) {
   return (
     <div className="mt-6 flow-root">
@@ -65,6 +70,16 @@ export default async function ParticipantsTable({
               ))}
             </tbody>
           </table>
+
+          <div className="py-3 ">
+            <Link
+              href={`/dashboard/leagues/${leagueId}/matches/create`}
+              className="flex items-center gap-5 self-start rounded-lg bg-blue-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-400 md:text-base"
+            >
+              Generar Confrontación
+              <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

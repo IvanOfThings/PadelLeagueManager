@@ -1,23 +1,155 @@
 'use server';
 
 import { z } from 'zod';
-import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { buildMatchesFromList, generateMatching } from './utils';
+import { fetchUsers } from './data';
+import {
+  ConfirmMatch,
+  DeleteMatch,
+  addResults,
+  createMatches,
+} from './dao/matches';
+import { Match } from './definitions';
+import { v4 } from 'uuid';
+import { UpdateScores } from './dao/lueague';
 
-const FormSchema = z.object({
-  id: z.string(),
-  customerId: z.string(),
-  amount: z.coerce.number(),
-  status: z.enum(['pending', 'paid']),
-  date: z.string(),
+const ResolveMatch = z.object({
+  set1Local: z.string().transform((val) => parseInt(val, 10)),
+  set1Visitor: z.string().transform((val) => parseInt(val, 10)),
 });
 
-const CreateInvoice = FormSchema.omit({ id: true, date: true });
-const UpdateInvoice = FormSchema.omit({ id: true, date: true });
+export const resolveMatch = async (match: Match, formData: FormData) => {
+  const { set1Local, set1Visitor } = ResolveMatch.parse({
+    set1Local: formData.get('set1Local'),
+    set1Visitor: formData.get('set1Visitor'),
+  });
 
+  await addResults(match, [
+    {
+      id: v4(),
+      matchId: match.id,
+      visitorScore: set1Visitor,
+      localScore: set1Local,
+      setNumber: 1,
+      localWins: set1Local > set1Visitor,
+      localTieBreak: 0,
+      visitorTieBreak: 0,
+    },
+  ]);
+
+  await UpdateScores(match.leagueId);
+
+  revalidatePath(`/dashboard/leagues/${match.leagueId}`);
+  redirect(`/dashboard/leagues/${match.leagueId}`);
+};
+
+const ConfirmMatchFormSchema = z.object({
+  localDrive: z.string().min(1),
+  localReverse: z.string().min(1),
+  visitorDrive: z.string().min(1),
+  visitorReverse: z.string().min(1),
+  action: z.enum(['confirm', 'discard']),
+});
+
+export const confirmMatch = async (
+  match: Match,
+  formData: FormData,
+): Promise<{ message: string }> => {
+  const { localDrive, localReverse, visitorDrive, visitorReverse, action } =
+    ConfirmMatchFormSchema.parse({
+      localDrive: formData.get('localDrive'),
+      localReverse: formData.get('localReverse'),
+      visitorDrive: formData.get('visitorDrive'),
+      visitorReverse: formData.get('visitorReverse'),
+      action: formData.get('action'),
+    });
+  if (action === 'discard') {
+    await DeleteMatch({ matchId: match.id });
+  } else {
+    if (localDrive === localReverse || visitorDrive === visitorReverse) {
+      return { message: 'No se puede repetir jugador en el mismo equipo' };
+    }
+    await ConfirmMatch(match, {
+      local: { driveId: localDrive, reversId: localReverse },
+      visitor: { driveId: visitorDrive, reversId: visitorReverse },
+    });
+  }
+
+  revalidatePath(`/dashboard/leagues/${match.leagueId}/matches/confirm`);
+  redirect(`/dashboard/leagues/${match.leagueId}/matches/confirm`);
+
+  return { message: '' };
+};
+
+const MatchesFormSchema = z.object({
+  playersIds: z
+    .string()
+    .transform((val) => {
+      console.log('playersIds:', val);
+      const r = val.split(',');
+      const r2 = r.filter(
+        (field, index) => r.indexOf(field) === index && field !== '',
+      );
+      console.log('playersIds after filter: ', r2);
+      return r2;
+    })
+    .refine(
+      (val) => {
+        console.log(val);
+        return val.length > 0 && val.length % 4 === 0;
+      },
+      {
+        message:
+          'El numero de jugadores ha de ser multiplo de 4 y diferentes entre si',
+      },
+    ),
+  playersCount: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val > 0 && val % 4 === 0, {
+      message: 'El numero de jugadores ha de ser multiplo de 4',
+    }),
+  rounds: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val > 0)
+    .refine((val) => val < 4),
+
+  matchDate: z.string().refine((val) => new Date(val).getTime()),
+});
+
+export async function generateMatches(leagueId: string, formData: FormData) {
+  console.log(
+    'formData playersCount:',
+    JSON.stringify(formData.get('playersCount')),
+  );
+  const { rounds, matchDate, playersCount, playersIds } =
+    MatchesFormSchema.parse({
+      rounds: formData.get('rounds'),
+      matchDate: formData.get('matchDate'),
+      playersCount: formData.get('playersCount'),
+      playersIds: formData.get('playersIds'),
+    });
+
+  const players = await fetchUsers(playersIds);
+  const shuffledPlayers = generateMatching(players);
+
+  const matches = buildMatchesFromList(
+    shuffledPlayers,
+    leagueId,
+    rounds,
+    new Date(matchDate),
+  );
+  await createMatches(matches);
+
+  revalidatePath(`/dashboard/leagues/${leagueId}/matches/confirm`);
+  redirect(`/dashboard/leagues/${leagueId}/matches/confirm`);
+}
+/*
 export async function createInvoice(formData: FormData) {
   const { customerId, amount, status } = CreateInvoice.parse({
     customerId: formData.get('customerId'),
@@ -73,6 +205,7 @@ export async function deleteInvoice(id: string) {
     return { message: 'Database Error: Failed to Delete Invoice.' };
   }
 }
+*/
 
 export async function authenticate(
   prevState: string | undefined,

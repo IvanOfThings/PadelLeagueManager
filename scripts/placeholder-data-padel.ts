@@ -218,6 +218,9 @@ export const matches: Match[] = [
     leagueId: leagues[0].id,
     date: new Date('2022-12-06'),
     localWins: true,
+    finished: true,
+    confirmed: true,
+    round: 1,
   },
   {
     id: 'f0b23613-5a65-4e0c-a204-43c5e911f7d2',
@@ -226,6 +229,9 @@ export const matches: Match[] = [
     leagueId: leagues[0].id,
     date: new Date('2022-12-06'),
     localWins: true,
+    finished: true,
+    confirmed: true,
+    round: 1,
   },
   {
     id: 'f0b23613-5a65-4e0c-a204-43c5e911f7d3',
@@ -234,6 +240,9 @@ export const matches: Match[] = [
     leagueId: leagues[0].id,
     date: new Date('2022-12-16'),
     localWins: false,
+    finished: true,
+    confirmed: true,
+    round: 1,
   },
   {
     id: 'f0b23613-5a65-4e0c-a204-43c5e911f7d4',
@@ -242,6 +251,20 @@ export const matches: Match[] = [
     leagueId: leagues[0].id,
     date: new Date('2022-12-16'),
     localWins: false,
+    finished: true,
+    confirmed: true,
+    round: 1,
+  },
+  {
+    id: 'f0b23613-7a65-4e0c-a204-43c5e911f7d4',
+    localId: teams[23].id, // 4 - 6
+    visitorId: teams[26].id, // 5 - 7
+    leagueId: leagues[0].id,
+    date: new Date('2150-12-16'),
+    localWins: true,
+    finished: true,
+    confirmed: false,
+    round: 2,
   },
 ];
 

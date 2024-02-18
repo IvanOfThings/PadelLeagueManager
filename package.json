@@ -12,7 +12,8 @@
     "prisma:migrate": "npx prisma migrate dev --name",
     "seed:deno": "/Users/ivan.perea/.deno/bin/deno run ./scripts/load-test-data.ts",
     "seed:node": "npx tsx ./scripts/load-test-data.ts",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",
@@ -23,6 +24,7 @@
     "autoprefixer": "10.4.15",
     "bcrypt": "^5.1.1",
     "clsx": "^2.0.0",
+    "data-structure-typed": "^1.52.0",
     "next": "^14.0.2",
     "next-auth": "^5.0.0-beta.5",
     "nextjs-tui-date-picker": "^2.2.2",
@@ -49,7 +51,8 @@
     "prettier-plugin-tailwindcss": "0.5.4",
     "prisma": "^5.9.1",
     "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "vitest": "^1.3.0"
   },
   "engines": {
     "node": ">=20.11.0"

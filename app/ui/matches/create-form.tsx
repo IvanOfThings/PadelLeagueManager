@@ -1,33 +1,13 @@
 'use client';
-import { CustomerField, User } from '@/app/lib/definitions';
+import { User } from '@/app/lib/definitions';
 import Link from 'next/link';
 import { ArrowDownTrayIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
 import { generateMatches } from '@/app/lib/actions';
-import { FormEvent, SetStateAction, use, useState } from 'react';
+import { SetStateAction, useState } from 'react';
 
 import { TuiDatePicker } from 'nextjs-tui-date-picker';
-import { createMatches } from '@/app/lib/dao/matches';
-/*
-function getCircularReplacer() {
-  const ancestors: any = [];
-  return function (key: any, value: any) {
-    if (typeof value !== 'object' || value === null) {
-      return value;
-    }
-    // `this` is the object that value is contained in,
-    // i.e., its direct parent.
-    while (ancestors.length > 0 && ancestors.at(-1) !== this) {
-      ancestors.pop();
-    }
-    if (ancestors.includes(value)) {
-      return '[Circular]';
-    }
-    ancestors.push(value);
-    return value;
-  };
-}
-*/
+
 export default function CreateMatchesForm({
   users,
   leagueId,
@@ -56,22 +36,6 @@ export default function CreateMatchesForm({
 
   console.log(`leagueId: ${leagueId}`);
   const generateMatchesWithLeagueId = generateMatches.bind(null, leagueId);
-  /*
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const formData = new FormData(event.currentTarget);
-    console.log('formData 2:', JSON.stringify(formData.get('leagueId')));
-    console.log('event 2:', event.currentTarget.elements.namedItem('date'));
-    const response = await fetch('/api/matches/create', {
-      method: 'POST',
-      body: formData,
-    });
-
-    // Handle response if necessary
-    const data = await response.json();
-    // ...
-  }*/
 
   return (
     <form action={generateMatchesWithLeagueId}>
@@ -149,7 +113,9 @@ export default function CreateMatchesForm({
         >
           Cancel
         </Link>
-        <Button type="submit">Generar</Button>
+        <Button color="blue" type="submit">
+          Generar
+        </Button>
       </div>
     </form>
   );

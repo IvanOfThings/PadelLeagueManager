@@ -90,7 +90,7 @@ function MatchCard({
             step="1"
             min="1"
             max="3"
-            defaultValue={match.round}
+            value={match.round}
             placeholder="Introduzca el número de rondas"
             className="   w-full rounded-md border border-gray-200 text-sm outline-2 placeholder:text-gray-500"
           />
@@ -176,7 +176,7 @@ function UserSelect({
               id="customer"
               name={`${inputName}`}
               className="peer block w-full cursor-pointer rounded-md border border-gray-200 py-2 pl-10 text-sm outline-2 placeholder:text-gray-500"
-              defaultValue={`${userId}`}
+              value={`${userId}`}
             >
               {users.map((user) => (
                 <option key={user.id} value={user.id}>

@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
-import { buildMatchesFromList, generateMatching } from './utils';
 import { fetchUsers } from './data';
 import {
   ConfirmMatch,
@@ -16,35 +15,47 @@ import {
 import { Match } from './definitions';
 import { v4 } from 'uuid';
 import { UpdateScores } from './dao/lueague';
+import { buildMatchesFromList } from './branch-and-bounding';
 
 const ResolveMatch = z.object({
-  set1Local: z.string().transform((val) => parseInt(val, 10)),
-  set1Visitor: z.string().transform((val) => parseInt(val, 10)),
+  set1Local: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val >= 0),
+  set1Visitor: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val >= 0),
 });
 
 export const resolveMatch = async (match: Match, formData: FormData) => {
-  const { set1Local, set1Visitor } = ResolveMatch.parse({
-    set1Local: formData.get('set1Local'),
-    set1Visitor: formData.get('set1Visitor'),
-  });
+  try {
+    const { set1Local, set1Visitor } = ResolveMatch.parse({
+      set1Local: formData.get('set1Local'),
+      set1Visitor: formData.get('set1Visitor'),
+    });
 
-  await addResults(match, [
-    {
-      id: v4(),
-      matchId: match.id,
-      visitorScore: set1Visitor,
-      localScore: set1Local,
-      setNumber: 1,
-      localWins: set1Local > set1Visitor,
-      localTieBreak: 0,
-      visitorTieBreak: 0,
-    },
-  ]);
+    await addResults(match, [
+      {
+        id: v4(),
+        matchId: match.id,
+        visitorScore: set1Visitor,
+        localScore: set1Local,
+        setNumber: 1,
+        localWins: set1Local > set1Visitor,
+        localTieBreak: 0,
+        visitorTieBreak: 0,
+      },
+    ]);
 
-  await UpdateScores(match.leagueId);
+    await UpdateScores(match.leagueId);
 
-  revalidatePath(`/dashboard/leagues/${match.leagueId}`);
-  redirect(`/dashboard/leagues/${match.leagueId}`);
+    revalidatePath(`/dashboard/leagues/${match.leagueId}`);
+    redirect(`/dashboard/leagues/${match.leagueId}`);
+  } catch (e) {
+    console.log('error', e);
+    return { message: `${e}` };
+  }
 };
 
 const ConfirmMatchFormSchema = z.object({
@@ -136,14 +147,14 @@ export async function generateMatches(leagueId: string, formData: FormData) {
     });
 
   const players = await fetchUsers(playersIds);
-  const shuffledPlayers = generateMatching(players);
 
-  const matches = buildMatchesFromList(
-    shuffledPlayers,
+  const matches = buildMatchesFromList({
+    players,
     leagueId,
+    playersCount,
     rounds,
-    new Date(matchDate),
-  );
+    date: new Date(matchDate),
+  });
   await createMatches(matches);
 
   revalidatePath(`/dashboard/leagues/${leagueId}/matches/confirm`);

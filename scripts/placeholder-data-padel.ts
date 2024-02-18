@@ -1,4 +1,4 @@
-import { League, Match, PrismaClient, Team, User, Set } from '@prisma/client';
+import { League, Match, Team, User, Set } from '@prisma/client';
 
 export const users: User[] = [
   {

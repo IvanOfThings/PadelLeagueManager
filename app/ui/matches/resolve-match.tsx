@@ -3,7 +3,7 @@ import { Match, User } from '@/app/lib/definitions';
 
 import { ArrowDownTrayIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
-import { confirmMatch, resolveMatch } from '@/app/lib/actions';
+import { resolveMatch } from '@/app/lib/actions';
 import TableTitle from '../table-title';
 import Link from 'next/link';
 

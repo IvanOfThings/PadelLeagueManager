@@ -9,7 +9,6 @@ import {
   User,
   Revenue,
   LeagueParticipant,
-  Match,
 } from './definitions';
 import { formatCurrency } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -314,7 +313,7 @@ export async function fetchUsers(userIds: string[]): Promise<User[]> {
       },
     },
   });
-  if (userIds.length === 0) {
+  if ((userIds.length > 0 && players.length) === 0) {
     throw new Error('Failed to fetch users');
   }
   return players.map((player) => {

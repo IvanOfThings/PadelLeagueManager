@@ -1,10 +1,11 @@
-import { Prisma, Match as PrismaMatch } from '@prisma/client';
+import { Prisma, Match as PrismaMatch, Set as PrismaSet } from '@prisma/client';
 import { Team, User, Set } from '../definitions';
 import { Match } from '../definitions';
 import prisma from '../prisma';
 import { fetchTeamsFromMatches } from './teams';
 import { fetchUsers } from '../data';
-import { machine } from 'os';
+import { mapSet } from '../mappers';
+import { MemoryTable } from '../memoryTable';
 
 const getTeamId = (team: Omit<Team, 'id'>) =>
   `${team.drive.id}.${team.reverse.id}`;
@@ -16,11 +17,16 @@ export const DeleteMatch = async ({ matchId }: { matchId: string }) => {
 };
 
 export const addResults = async (match: Match, results: Set[]) => {
-  const r = await Promise.all(
-    results.map(async (res) => {
-      await prisma.set.create({ data: res });
-    }),
-  );
+  try {
+    const r = await Promise.all(
+      results.map(async (res) => {
+        await prisma.set.create({ data: mapSet(res) });
+      }),
+    );
+  } catch (e) {
+    console.log('error', e);
+    return { message: `${e}` };
+  }
 
   const localWinsSets = results.filter((result) => result.localWins).length;
   const visitorWinsSets = results.filter((result) => !result.localWins).length;
@@ -228,4 +234,42 @@ export async function fetchUnconfirmedMatches(
   leagueId: string,
 ): Promise<Match[]> {
   return fetchMatches(leagueId, false);
+}
+
+export async function getMatchesPD(leagueId: string): Promise<{
+  playedWith: MemoryTable;
+  playedAgainst: MemoryTable;
+}> {
+  const matches = await prisma.match.findMany({
+    where: { leagueId: leagueId, finished: true },
+  });
+  const teams = await fetchTeamsFromMatches(matches);
+  const teamsMap = new Map<
+    string,
+    {
+      id: string;
+      driveId: string;
+      reversId: string;
+    }
+  >();
+  teams.forEach((t) => {
+    teamsMap.set(t.id, t);
+  });
+  const playedWith = new MemoryTable([]);
+  const playedAgainst = new MemoryTable([]);
+  matches.forEach((match) => {
+    const teamLocal = teamsMap.get(match.localId);
+    const teamVisitor = teamsMap.get(match.visitorId);
+    if (teamLocal && teamVisitor) {
+      playedWith.addItem(teamLocal.driveId, teamLocal.reversId);
+      playedWith.addItem(teamLocal.reversId, teamLocal.driveId);
+      playedWith.addItem(teamVisitor.driveId, teamVisitor.reversId);
+      playedWith.addItem(teamVisitor.reversId, teamVisitor.driveId);
+      playedAgainst.addItem(teamLocal.driveId, teamVisitor.driveId);
+      playedAgainst.addItem(teamLocal.driveId, teamVisitor.reversId);
+      playedAgainst.addItem(teamLocal.reversId, teamVisitor.driveId);
+      playedAgainst.addItem(teamLocal.reversId, teamVisitor.reversId);
+    }
+  });
+  return { playedWith, playedAgainst };
 }

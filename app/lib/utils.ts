@@ -1,5 +1,4 @@
-import { Match, Revenue, User } from './definitions';
-import { v4 as uuidv4 } from 'uuid';
+import { Revenue } from './definitions';
 
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {
@@ -69,44 +68,22 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
   ];
 };
 
-export const generateMatching = (players: User[]) => {
+/*
+export const generateMatchingRandom = (players: User[]) => {
   const shuffledPlayers = shuffle(players);
 
   return shuffledPlayers;
-};
+};*/
 
-export const buildMatchesFromList = (
-  players: User[],
-  leagueId: string,
-  rounds: number,
-  date: Date,
-): Match[][] => {
-  const matches: Match[][] = [];
-  for (let i = 0; i < rounds; i++) {
-    const round = new Array<Match>();
-    for (let j = 0; j < players.length; j += 4) {
-      round.push({
-        leagueId,
-        date: date,
-        localWins: false,
-        teamLocal: {
-          drive: players[j],
-          reverse: players[j + 1],
-        },
-        teamVisitor: { drive: players[j + 2], reverse: players[j + 3] },
-        results: [],
-        finished: false,
-        id: uuidv4(),
-        confirmed: false,
-        round: i + 1,
-      });
-    }
-    matches.push(round);
-  }
-  return matches;
-};
+/*
+export const getSubelementCacheKey = (players: User[], index: number) => {
 
-const shuffle = <T>(array: T[]): T[] => {
+  const key = players.map((player, index) => player.id).join('-');
+  return `${key}-iter-${index}`;
+};
+*/
+
+export const shuffle = <T>(array: T[]): T[] => {
   let currentIndex = array.length,
     randomIndex;
 

@@ -10,7 +10,7 @@ export const users: User[] = [
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857823',
     name: 'player2',
-    email: 'player21@nextmail.com',
+    email: 'player2@nextmail.com',
     password: '123456',
   },
   {
@@ -47,6 +47,20 @@ export const users: User[] = [
     id: 'a063093a-b1af-42ea-9114-38af7e857829',
     name: 'player8',
     email: 'player8@nextmail.com',
+    password: '123456',
+  },
+];
+export const guests: User[] = [
+  {
+    id: 'a063093a-b1af-42ea-9114-38af7e851022',
+    name: 'guest1',
+    email: 'player9@nextmail.com',
+    password: '123456',
+  },
+  {
+    id: 'a063093a-b1af-42ea-9114-38af7e851023',
+    name: 'guest2',
+    email: 'player10@nextmail.com',
     password: '123456',
   },
 ];
@@ -221,6 +235,7 @@ export const matches: Match[] = [
     finished: true,
     confirmed: true,
     round: 1,
+    official: true,
   },
   {
     id: 'f0b23613-5a65-4e0c-a204-43c5e911f7d2',
@@ -232,6 +247,7 @@ export const matches: Match[] = [
     finished: true,
     confirmed: true,
     round: 1,
+    official: true,
   },
   {
     id: 'f0b23613-5a65-4e0c-a204-43c5e911f7d3',
@@ -243,6 +259,7 @@ export const matches: Match[] = [
     finished: true,
     confirmed: true,
     round: 1,
+    official: true,
   },
   {
     id: 'f0b23613-5a65-4e0c-a204-43c5e911f7d4',
@@ -254,6 +271,7 @@ export const matches: Match[] = [
     finished: true,
     confirmed: true,
     round: 1,
+    official: true,
   },
   {
     id: 'f0b23613-7a65-4e0c-a204-43c5e911f7d4',
@@ -265,6 +283,7 @@ export const matches: Match[] = [
     finished: true,
     confirmed: false,
     round: 2,
+    official: true,
   },
 ];
 

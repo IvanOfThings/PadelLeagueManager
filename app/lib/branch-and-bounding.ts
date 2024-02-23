@@ -1,5 +1,5 @@
 import { MaxPriorityQueue } from 'data-structure-typed';
-import { Match, User } from './definitions';
+import { Match, User, UserParticipant } from './definitions';
 import { MemoryTable } from './memoryTable';
 import { NodeItem, createMaxPriorityQueue } from './maxPriorityQueue';
 import { v4 as uuidv4 } from 'uuid';
@@ -73,10 +73,14 @@ export const scorePlayer = ({
 }: {
   playWith: MemoryTable;
   playAgainst: MemoryTable;
-  players: User[];
+  players: UserParticipant[];
   partialSolution: number[];
   evalPlayer: number;
 }): number => {
+  const player = players[evalPlayer];
+  if (player.guest) {
+    return 0;
+  }
   const matchUsers = buildUsersMatchList({
     players,
     partialSolution,
@@ -124,7 +128,7 @@ export const scoreMatch = ({
 }: {
   playWith: MemoryTable;
   playAgainst: MemoryTable;
-  players: User[];
+  players: UserParticipant[];
   partialSolution: number[];
   evalMatch: number;
 }): number => {
@@ -157,7 +161,7 @@ export const estimatePartialSolutionWeight = ({
 }: {
   playWith: MemoryTable;
   playAgainst: MemoryTable;
-  players: User[];
+  players: UserParticipant[];
   partialSolution: number[];
 }) => {
   const matches = Math.ceil(players.length / 4);
@@ -187,7 +191,7 @@ export const expand = ({
   p: MaxPriorityQueue<NodeItem>;
   elements: Array<number>;
   partialSolution: Array<number>;
-  players: User[];
+  players: UserParticipant[];
   playWith: MemoryTable;
   playAgainst: MemoryTable;
   maxScore: number;
@@ -212,7 +216,7 @@ export const generateMatching = ({
   playWith,
   playAgainst,
 }: {
-  players: User[];
+  players: UserParticipant[];
   playWith: MemoryTable;
   playAgainst: MemoryTable;
 }): number[] => {
@@ -264,11 +268,10 @@ export const generateMatching = ({
 export const buildMatchesFromList = ({
   players,
   leagueId,
-  playersCount,
   rounds,
   date,
 }: {
-  players: User[];
+  players: UserParticipant[];
   leagueId: string;
   playersCount: number;
   rounds: number;
@@ -306,6 +309,12 @@ export const buildMatchesFromList = ({
         id: uuidv4(),
         confirmed: false,
         round: i + 1,
+        official: !(
+          players[driveLocal].guest ||
+          players[reverseLocal].guest ||
+          players[driveVisitor].guest ||
+          players[reverseVisitor].guest
+        ),
       });
       playWith.addItem(players[driveLocal].id, players[reverseLocal].id);
       playWith.addItem(players[driveVisitor].id, players[reverseVisitor].id);

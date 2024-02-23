@@ -30,6 +30,9 @@ export default async function MatchesTable({
                   Fecha
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
+                  Oficial
+                </th>
+                <th scope="col" className="px-3 py-5 font-medium">
                   Sets
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
@@ -53,6 +56,9 @@ export default async function MatchesTable({
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <p>{match.date.toLocaleString()}</p>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <p>{`${match.official ? 'Si' : 'No'}`}</p>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {match.results.map((result, i) => {

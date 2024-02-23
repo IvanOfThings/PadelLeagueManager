@@ -99,6 +99,24 @@ function MatchCard({
       </div>
 
       <div className="mb-4  grid grid-cols-4 gap-4">
+        <span className=" inline-block px-5 py-1  ">
+          <label htmlFor="amount" className=" text-sm font-medium">
+            Oficial:
+          </label>
+        </span>
+        <span className="col-span-3 inline-block pe-5">
+          <input
+            readOnly={true}
+            id="official"
+            name="official"
+            type="boolean"
+            value={`${match.official === true ? 'Si' : 'No'}`}
+            placeholder="Introduzca el número de rondas"
+            className="   w-full rounded-md border border-gray-200 text-sm outline-2 placeholder:text-gray-500"
+          />
+        </span>
+      </div>
+      <div className="mb-4  grid grid-cols-4 gap-4">
         <span className="col-span-2 "></span>
         <Button name="action" value="discard" type="submit" color="red">
           Descartar

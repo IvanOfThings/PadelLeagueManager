@@ -1,6 +1,5 @@
-import { MaxPriorityQueue } from 'data-structure-typed';
-import { expect, test } from 'vitest';
-import { User } from '../definitions';
+import { expect, test, describe } from 'vitest';
+import { UserParticipant } from '../definitions';
 import { MemoryTable } from '../memoryTable';
 import {
   buildMatchesFromList,
@@ -15,15 +14,14 @@ import {
   scorePlayer,
   sortArrayForPlayer,
 } from '../branch-and-bounding';
-import exp from 'constants';
 import { NodeItem, createMaxPriorityQueue } from '../maxPriorityQueue';
-import { describe } from 'node:test';
 
-const getMockUser = (id: number): User => {
+const getMockUser = (id: number, guest = false): UserParticipant => {
   return {
     id: id.toString(),
     name: `user${id}`,
     email: `email${id}@nextmail.com`,
+    guest,
   };
 };
 
@@ -861,6 +859,7 @@ describe('Branch and Bounding', () => {
           id: expect.any(String),
           leagueId: '1',
           localWins: false,
+          official: true,
           results: expect.arrayContaining([]),
           round: 1,
           teamLocal: expect.objectContaining({
@@ -898,6 +897,7 @@ describe('Branch and Bounding', () => {
           id: expect.any(String),
           leagueId: '1',
           localWins: false,
+          official: true,
           results: expect.arrayContaining([]),
           round: 2,
           teamLocal: expect.objectContaining({
@@ -922,6 +922,72 @@ describe('Branch and Bounding', () => {
               email: 'email4@nextmail.com',
               id: '4',
               name: 'user4',
+            }),
+          }),
+        }),
+      );
+    });
+
+    test('Expanding Second Node but with a previous match already played with guest users', () => {
+      // Arrange
+      const p = createMaxPriorityQueue();
+      const players = [
+        getMockUser(1),
+        getMockUser(2),
+        getMockUser(3),
+        getMockUser(4, true),
+      ];
+
+      // Act
+      const matches = buildMatchesFromList({
+        players,
+        leagueId: '1',
+        playersCount: 4,
+        rounds: 3,
+        date: new Date(),
+      });
+
+      // Assert
+      expect(matches).toHaveLength(3);
+      expect(matches[0]).toHaveLength(1);
+      const a = new Array<NodeItem>();
+      expect(matches[0][0]).toMatchObject(
+        expect.objectContaining({
+          confirmed: false,
+          date: expect.any(Date),
+          finished: false,
+          id: expect.any(String),
+          leagueId: '1',
+          localWins: false,
+          official: false,
+          results: expect.arrayContaining([]),
+          round: 1,
+          teamLocal: expect.objectContaining({
+            drive: expect.objectContaining({
+              email: 'email2@nextmail.com',
+              id: '2',
+              guest: false,
+              name: 'user2',
+            }),
+            reverse: expect.objectContaining({
+              email: 'email1@nextmail.com',
+              id: '1',
+              guest: false,
+              name: 'user1',
+            }),
+          }),
+
+          teamVisitor: expect.objectContaining({
+            drive: expect.objectContaining({
+              email: 'email3@nextmail.com',
+              id: '3',
+              name: 'user3',
+            }),
+            reverse: expect.objectContaining({
+              email: 'email4@nextmail.com',
+              id: '4',
+              name: 'user4',
+              guest: true,
             }),
           }),
         }),

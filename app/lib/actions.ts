@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
-import { fetchUsers } from './data';
+import { fetchUsersParticipants } from './data';
 import {
   ConfirmMatch,
   DeleteMatch,
@@ -49,13 +49,12 @@ export const resolveMatch = async (match: Match, formData: FormData) => {
     ]);
 
     await UpdateScores(match.leagueId);
-
-    revalidatePath(`/dashboard/leagues/${match.leagueId}`);
-    redirect(`/dashboard/leagues/${match.leagueId}`);
   } catch (e) {
     console.log('error', e);
     return { message: `${e}` };
   }
+  revalidatePath(`/dashboard/leagues/${match.leagueId}`);
+  redirect(`/dashboard/leagues/${match.leagueId}`);
 };
 
 const ConfirmMatchFormSchema = z.object({
@@ -146,7 +145,7 @@ export async function generateMatches(leagueId: string, formData: FormData) {
       playersIds: formData.get('playersIds'),
     });
 
-  const players = await fetchUsers(playersIds);
+  const players = await fetchUsersParticipants(playersIds, leagueId);
 
   const matches = buildMatchesFromList({
     players,

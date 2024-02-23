@@ -9,6 +9,7 @@ import {
   User,
   Revenue,
   LeagueParticipant,
+  UserParticipant,
 } from './definitions';
 import { formatCurrency } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -303,6 +304,44 @@ export async function fetchPlayersByLeague(leagueId: string): Promise<User[]> {
     },
   });
   return fetchUsers(participantIds.map((p) => p.participantId));
+}
+
+export async function fetchUsersParticipants(
+  userIds: string[],
+  leagueId: string,
+): Promise<UserParticipant[]> {
+  const players = await prisma.user.findMany({
+    where: {
+      id: {
+        in: userIds,
+      },
+    },
+  });
+
+  const participants = await prisma.participates.findMany({
+    where: {
+      leagueId,
+      participantId: {
+        in: userIds,
+      },
+    },
+  });
+  if ((userIds.length > 0 && players.length) === 0) {
+    throw new Error('Failed to fetch users');
+  }
+  const userParticipants = participants.reduce((acc, curr) => {
+    const user = players.find((p) => p.id === curr.participantId);
+    if (user) {
+      acc.push({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        guest: curr.guest,
+      });
+    }
+    return acc;
+  }, new Array<UserParticipant>());
+  return userParticipants;
 }
 
 export async function fetchUsers(userIds: string[]): Promise<User[]> {

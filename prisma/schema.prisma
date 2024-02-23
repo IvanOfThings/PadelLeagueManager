@@ -32,6 +32,7 @@ model Participates {
   playedMatches Int @default(0)
   winMatches Int @default(0)
   points Int @default(0)
+  guest Boolean @default(false)
 }
 
 
@@ -72,6 +73,7 @@ model Match {
   finished Boolean @default(false)
   confirmed Boolean @default(false)
   round Int @default(1)
+  official Boolean @default(false)
 }
 
 model Set {

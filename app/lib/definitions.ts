@@ -15,6 +15,10 @@ export type User = {
   email: string;
 };
 
+export type UserParticipant = {
+  guest: boolean;
+} & User;
+
 export type Team = { drive: User; reverse: User; id: string | null };
 
 export type LeagueParticipant = {
@@ -122,4 +126,5 @@ export type Match = {
   finished: boolean;
   confirmed: boolean;
   round: number;
+  official: boolean;
 };

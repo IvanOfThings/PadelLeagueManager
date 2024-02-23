@@ -102,6 +102,7 @@ export const createMatches = async (matches: Match[][]) => {
       finished: match.finished,
       confirmed: match.confirmed,
       round: match.round,
+      official: match.official,
     };
   });
   await prisma.match.createMany({ data: mapInput });
@@ -201,6 +202,7 @@ const fillMatchData = async (
     finished: match.finished,
     confirmed: match.confirmed,
     round: match.round,
+    official: match.official,
   };
 };
 

@@ -53,6 +53,7 @@ export type League = {
   id: string;
   name: string;
   participants: number;
+  adminId: string;
 };
 
 export type InvoicesTable = {

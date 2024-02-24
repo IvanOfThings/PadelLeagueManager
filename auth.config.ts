@@ -1,4 +1,4 @@
-import type { NextAuthConfig } from 'next-auth';
+import type { NextAuthConfig, Session } from 'next-auth';
 
 export const authConfig = {
   pages: {
@@ -15,6 +15,25 @@ export const authConfig = {
         return Response.redirect(new URL('/dashboard', nextUrl));
       }
       return true;
+    },
+    async jwt({ token, user }) {
+      // Persist the OAuth access_token and or the use
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    // @ts-ignore
+    async session({ session, token }) {
+      // Send properties to the client, like an access_token and user id from a provider.
+      if (session && token !== undefined) {
+        session.user = {
+          id: token.id,
+          name: token.name,
+          email: token.email,
+        };
+      }
+      return session;
     },
   },
   providers: [], // Add providers with an empty array for now

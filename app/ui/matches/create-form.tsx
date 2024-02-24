@@ -49,7 +49,7 @@ export default function CreateMatchesForm({
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         <div className="mb-4">
           <label htmlFor="customer" className="mb-2 block text-2xl font-bold">
-            Configure Confrontación
+            Configurar Confrontación
           </label>
         </div>
         <PlayerNumber onSelect={handleOptionSelect} />

@@ -8,8 +8,6 @@ export default async function MyLeagues() {
     <div className="flex w-full flex-col md:col-span-4">
       <h2 className={` mb-4 text-xl md:text-2xl`}>Mis Ligas</h2>
       <div className="flex grow flex-col justify-between rounded-xl bg-gray-50 p-4">
-        {/* NOTE: comment in this code when you get to this point in the course */}
-
         <div className="bg-white px-6">
           <div className="flex flex-row items-center justify-between border-b py-4">
             <div className="flex items-center">

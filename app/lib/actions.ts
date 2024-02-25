@@ -99,17 +99,14 @@ const MatchesFormSchema = z.object({
   playersIds: z
     .string()
     .transform((val) => {
-      console.log('playersIds:', val);
       const r = val.split(',');
       const r2 = r.filter(
         (field, index) => r.indexOf(field) === index && field !== '',
       );
-      console.log('playersIds after filter: ', r2);
       return r2;
     })
     .refine(
       (val) => {
-        console.log(val);
         return val.length > 0 && val.length % 4 === 0;
       },
       {
@@ -133,10 +130,6 @@ const MatchesFormSchema = z.object({
 });
 
 export async function generateMatches(leagueId: string, formData: FormData) {
-  console.log(
-    'formData playersCount:',
-    JSON.stringify(formData.get('playersCount')),
-  );
   const { rounds, matchDate, playersCount, playersIds } =
     MatchesFormSchema.parse({
       rounds: formData.get('rounds'),

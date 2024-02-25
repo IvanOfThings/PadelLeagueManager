@@ -5,14 +5,15 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import type { User, UserWithPassword } from '@/app/lib/definitions';
 import prisma from './app/lib/prisma';
-import { authConfig } from './aut.config';
+import { authConfig } from './auth.config';
 
 async function getFullUser(
   email: string,
 ): Promise<UserWithPassword | undefined> {
   try {
-    console.log('Fetching user:', email);
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email, regularLoginActive: true },
+    });
     if (!user) {
       throw new Error('Failed to fetch user.');
     }
@@ -33,14 +34,12 @@ export const {
   providers: [
     Credentials({
       async authorize(credentials): Promise<User | null> {
-        console.log(JSON.stringify(credentials));
         const parsedCredentials = z
           .object({ email: z.string().email(), password: z.string().min(6) })
           .safeParse(credentials);
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
           const user = await getFullUser(email);
-          console.log('User:', user);
           if (!user) return null;
           const passwordsMatch = await bcrypt.compare(password, user.password);
           if (passwordsMatch) {

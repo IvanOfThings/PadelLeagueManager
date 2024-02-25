@@ -1,14 +1,7 @@
-<<<<<<< Updated upstream
 import { fetchMatch } from '@/app/lib/dao/matches';
 import { fetchLeagueById } from '@/app/lib/data';
 import ResolveMatch from '@/app/ui/matches/resolve-match';
 import { auth } from '@/auth';
-=======
-import { auth } from '@/app/api/auth/[...nextauth]/route';
-import { fetchMatch } from '@/app/lib/dao/matches';
-import { fetchLeagueById } from '@/app/lib/data';
-import ResolveMatch from '@/app/ui/matches/resolve-match';
->>>>>>> Stashed changes
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 

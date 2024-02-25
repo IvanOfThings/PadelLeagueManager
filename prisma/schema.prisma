@@ -15,6 +15,7 @@ model User {
   email    String @unique
   name     String
   password String
+  regularLoginActive Boolean @default(false)
   driveTeams    Team[] @relation(name: "driveTeams")
   reverseTeams    Team[] @relation(name: "reverseTeams")
   leaguesAdmins    League[] @relation(name: "leagueAdmin")

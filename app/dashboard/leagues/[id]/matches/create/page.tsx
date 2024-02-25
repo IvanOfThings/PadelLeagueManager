@@ -1,12 +1,6 @@
-<<<<<<< Updated upstream
 import { fetchLeagueById, fetchPlayersByLeague } from '@/app/lib/data';
 import CreateMatchesForm from '@/app/ui/matches/create-form';
 import { auth } from '@/auth';
-=======
-import { auth } from '@/app/api/auth/[...nextauth]/route';
-import { fetchLeagueById, fetchPlayersByLeague } from '@/app/lib/data';
-import CreateMatchesForm from '@/app/ui/matches/create-form';
->>>>>>> Stashed changes
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 

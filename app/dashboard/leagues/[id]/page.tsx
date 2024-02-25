@@ -1,18 +1,11 @@
 import { Suspense } from 'react';
 
 import { LatestInvoicesSkeleton } from '@/app/ui/skeletons';
-<<<<<<< Updated upstream
-import { auth } from '@/auth';
-=======
->>>>>>> Stashed changes
 import ParticipantsTable from '@/app/ui/leagues/table-participants';
 import { fetchLeagueAndParticipants } from '@/app/lib/data';
 import MatchesTable from '@/app/ui/leagues/table-matches';
 import { fetchMatches } from '@/app/lib/dao/matches';
-<<<<<<< Updated upstream
-=======
-import { auth } from '@/app/api/auth/[...nextauth]/route';
->>>>>>> Stashed changes
+import { auth } from '@/auth';
 
 export default async function Page({ params }: { params: { id: string } }) {
   const session = await auth();

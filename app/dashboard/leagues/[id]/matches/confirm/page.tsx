@@ -1,14 +1,7 @@
-<<<<<<< Updated upstream
-import { fetchUnconfirmedMatches } from '@/app/lib/dao/matches';
-import { fetchLeagueById } from '@/app/lib/data';
-import ConfirmMatchesForm from '@/app/ui/matches/confirm-matches';
-import { auth } from '@/auth';
-=======
 import { auth } from '@/auth';
 import { fetchUnconfirmedMatches } from '@/app/lib/dao/matches';
 import { fetchLeagueById } from '@/app/lib/data';
 import ConfirmMatchesForm from '@/app/ui/matches/confirm-matches';
->>>>>>> Stashed changes
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 

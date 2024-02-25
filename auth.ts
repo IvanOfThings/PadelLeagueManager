@@ -1,10 +1,11 @@
 import NextAuth from 'next-auth';
-import { authConfig } from './auth.config';
 import Credentials from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import type { User, UserWithPassword } from '@/app/lib/definitions';
 import prisma from './app/lib/prisma';
+import { authConfig } from './aut.config';
 
 async function getFullUser(
   email: string,
@@ -22,7 +23,12 @@ async function getFullUser(
   }
 }
 
-export const { auth, signIn, signOut } = NextAuth({
+export const {
+  auth,
+  signIn,
+  signOut,
+  handlers: { GET, POST },
+} = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
@@ -45,6 +51,10 @@ export const { auth, signIn, signOut } = NextAuth({
         console.log('Invalid credentials');
         return null;
       },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
 });

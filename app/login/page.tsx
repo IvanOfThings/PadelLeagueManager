@@ -1,5 +1,6 @@
 import PLMLogo from '@/app/ui/plm-logo';
 import LoginForm from '@/app/ui/login-form';
+import SocialLogin from '../ui/social-login';
 
 export default function LoginPage() {
   return (
@@ -11,6 +12,7 @@ export default function LoginPage() {
           </div>
         </div>
         <LoginForm />
+        <SocialLogin />
       </div>
     </main>
   );

@@ -3,7 +3,6 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import { fetchUsersParticipants } from './data';
 import {
@@ -16,6 +15,7 @@ import { Match } from './definitions';
 import { v4 } from 'uuid';
 import { UpdateScores } from './dao/lueague';
 import { buildMatchesFromList } from './branch-and-bounding';
+import { signIn } from '@/auth';
 
 const ResolveMatch = z.object({
   set1Local: z
@@ -216,6 +216,22 @@ export async function deleteInvoice(id: string) {
   }
 }
 */
+
+export async function authenticateWithGoogle() {
+  try {
+    await signIn('google');
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+}
 
 export async function authenticate(
   prevState: string | undefined,

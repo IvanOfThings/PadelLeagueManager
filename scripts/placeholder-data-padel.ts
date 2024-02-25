@@ -6,48 +6,56 @@ export const users: User[] = [
     name: 'player1',
     email: 'player1@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857823',
     name: 'player2',
     email: 'player2@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857824',
     name: 'player3',
     email: 'player3@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857825',
     name: 'player4',
     email: 'player4@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857826',
     name: 'player5',
     email: 'player5@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857827',
     name: 'player6',
     email: 'player64@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857828',
     name: 'player7',
     email: 'player7@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e857829',
     name: 'player8',
     email: 'player8@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
 ];
 export const guests: User[] = [
@@ -56,12 +64,14 @@ export const guests: User[] = [
     name: 'guest1',
     email: 'player9@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
   {
     id: 'a063093a-b1af-42ea-9114-38af7e851023',
     name: 'guest2',
     email: 'player10@nextmail.com',
     password: '123456',
+    regularLoginActive: true,
   },
 ];
 

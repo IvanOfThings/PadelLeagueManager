@@ -35,3 +35,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+scripts/testing-league-only.test.ts
+scripts/load-data-from-liga-test.test.ts

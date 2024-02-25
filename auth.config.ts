@@ -1,10 +1,75 @@
-import type { NextAuthConfig, Session } from 'next-auth';
+import type { NextAuthConfig } from 'next-auth';
+import { UserWithPassword } from './app/lib/definitions';
+import prisma from './app/lib/prisma';
+import { uuidV4 } from 'data-structure-typed';
+import bcrypt from 'bcrypt';
+
+export async function createUser({
+  id,
+  name,
+  email,
+}: {
+  id: string;
+  name: string;
+  email: string;
+}): Promise<UserWithPassword> {
+  let user = await prisma.user.findUnique({
+    where: {
+      id: id,
+    },
+  });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        id,
+        name,
+        email,
+        password: '',
+      },
+    });
+  }
+  return user;
+}
+
+async function getFullUser(email: string): Promise<UserWithPassword | null> {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    return user;
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    throw new Error('Failed to fetch user.');
+  }
+}
 
 export const authConfig = {
   pages: {
     signIn: '/login',
   },
   callbacks: {
+    signIn: async ({ user, account, profile, email, credentials }) => {
+      let isLoggedIn = false;
+      if (
+        account &&
+        profile &&
+        account.provider === 'google' &&
+        profile.email
+      ) {
+        isLoggedIn = !!profile.email_verified;
+        let user = await getFullUser(profile.email);
+        if (!user) {
+          user = await createUser({
+            email: profile.email,
+            name: profile.name ?? 'Jhon Doe',
+            id: uuidV4(),
+          });
+        }
+        profile.userId = user?.id;
+      } else if (account && account.provider === 'credentials') {
+        isLoggedIn = !!user;
+      }
+      return isLoggedIn;
+    },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
@@ -16,21 +81,25 @@ export const authConfig = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+
+    async jwt({ token, user, profile }) {
       // Persist the OAuth access_token and or the use
       if (user) {
-        token.id = user.id;
+        token.userId = user.id;
+      }
+      if (profile) {
+        token.userId = profile.userId;
       }
       return token;
     },
     // @ts-ignore
     async session({ session, token }) {
       // Send properties to the client, like an access_token and user id from a provider.
-      if (session && token !== undefined) {
+      if (session && token !== undefined && token.userId !== undefined) {
         session.user = {
-          id: token.id,
-          name: token.name,
-          email: token.email,
+          ...session.user,
+          // @ts-ignore
+          id: token.userId,
         };
       }
       return session;

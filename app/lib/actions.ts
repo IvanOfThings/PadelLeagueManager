@@ -3,7 +3,6 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import { fetchUsersParticipants } from './data';
 import {
@@ -16,6 +15,7 @@ import { Match } from './definitions';
 import { v4 } from 'uuid';
 import { UpdateScores } from './dao/lueague';
 import { buildMatchesFromList } from './branch-and-bounding';
+import { signIn } from '@/auth';
 
 const ResolveMatch = z.object({
   set1Local: z
@@ -99,17 +99,14 @@ const MatchesFormSchema = z.object({
   playersIds: z
     .string()
     .transform((val) => {
-      console.log('playersIds:', val);
       const r = val.split(',');
       const r2 = r.filter(
         (field, index) => r.indexOf(field) === index && field !== '',
       );
-      console.log('playersIds after filter: ', r2);
       return r2;
     })
     .refine(
       (val) => {
-        console.log(val);
         return val.length > 0 && val.length % 4 === 0;
       },
       {
@@ -133,10 +130,6 @@ const MatchesFormSchema = z.object({
 });
 
 export async function generateMatches(leagueId: string, formData: FormData) {
-  console.log(
-    'formData playersCount:',
-    JSON.stringify(formData.get('playersCount')),
-  );
   const { rounds, matchDate, playersCount, playersIds } =
     MatchesFormSchema.parse({
       rounds: formData.get('rounds'),
@@ -216,6 +209,22 @@ export async function deleteInvoice(id: string) {
   }
 }
 */
+
+export async function authenticateWithGoogle() {
+  try {
+    await signIn('google');
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+}
 
 export async function authenticate(
   prevState: string | undefined,

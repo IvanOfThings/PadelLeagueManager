@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 
 import { LatestInvoicesSkeleton } from '@/app/ui/skeletons';
-import { auth } from '@/auth';
 import ParticipantsTable from '@/app/ui/leagues/table-participants';
 import { fetchLeagueAndParticipants } from '@/app/lib/data';
 import MatchesTable from '@/app/ui/leagues/table-matches';
 import { fetchMatches } from '@/app/lib/dao/matches';
+import { auth } from '@/auth';
 
 export default async function Page({ params }: { params: { id: string } }) {
   const session = await auth();

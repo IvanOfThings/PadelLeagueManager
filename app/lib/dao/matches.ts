@@ -6,17 +6,20 @@ import { fetchTeamsFromMatches } from './teams';
 import { fetchUsers } from '../data';
 import { mapSet } from '../mappers';
 import { MemoryTable } from '../memoryTable';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const getTeamId = (team: Omit<Team, 'id'>) =>
   `${team.drive.id}.${team.reverse.id}`;
 
 export const DeleteMatch = async ({ matchId }: { matchId: string }) => {
+  noStore();
   await prisma.match.delete({
     where: { id: matchId },
   });
 };
 
 export const addResults = async (match: Match, results: Set[]) => {
+  noStore();
   try {
     const r = await Promise.all(
       results.map(async (res) => {
@@ -45,6 +48,7 @@ export const ConfirmMatch = async (
     visitor: { driveId: string; reversId: string };
   },
 ) => {
+  noStore();
   const tempLocalTeam = match.teamLocal;
   if (teams.local.reversId === tempLocalTeam.drive.id) {
     const auxTeam = tempLocalTeam.drive;
@@ -73,6 +77,7 @@ export const ConfirmMatch = async (
 };
 
 export const createMatches = async (matches: Match[][]) => {
+  noStore();
   const teams = matches
     .map((m) =>
       m.map((m) => [
@@ -83,7 +88,6 @@ export const createMatches = async (matches: Match[][]) => {
     .flat()
     .flat();
   const teamsMap = await retrieveOrCreateTeams(teams);
-  console.log('teamsMap', teamsMap);
   const matchesArray = matches.flat();
   const mapInput = matchesArray.map((match): Prisma.MatchCreateManyInput => {
     const localId = teamsMap.get(getTeamId(match.teamLocal))?.id;
@@ -109,19 +113,18 @@ export const createMatches = async (matches: Match[][]) => {
 };
 
 const findOrCreateTeam = async (team: Team): Promise<Team> => {
+  noStore();
   const teamRecord = await prisma.team.findMany({
     where: { reversId: team.reverse.id, driveId: team.drive.id },
   });
   if (!team.id) {
     if (teamRecord.length > 0) {
-      console.log('teamRecord.id', teamRecord[0].id);
       team.id = teamRecord[0].id;
     } else {
       const newTeam = await prisma.team.create({
         data: { driveId: team.drive.id, reversId: team.reverse.id },
       });
       team.id = newTeam.id;
-      console.log('newTeam.id', newTeam.id);
     }
   }
   return team;
@@ -130,6 +133,7 @@ const findOrCreateTeam = async (team: Team): Promise<Team> => {
 const retrieveOrCreateTeams = async (
   teams: User[][],
 ): Promise<Map<string, Team>> => {
+  noStore();
   const teamsMap = teams.reduce((acc, curr: Array<User>) => {
     acc.set(getTeamId({ drive: curr[0], reverse: curr[1] }), {
       drive: curr[0],
@@ -155,6 +159,7 @@ export async function fetchMatch(
   matchId: string,
   confirmed = true,
 ): Promise<Match> {
+  noStore();
   const match = await prisma.match.findUnique({
     where: { id: matchId, leagueId, confirmed },
   });
@@ -210,6 +215,7 @@ export async function fetchMatches(
   leagueId: string,
   confirmed = true,
 ): Promise<Match[]> {
+  noStore();
   const matches = await prisma.match.findMany({
     where: { leagueId: leagueId, confirmed: confirmed },
   });
@@ -242,6 +248,7 @@ export async function getMatchesPD(leagueId: string): Promise<{
   playedWith: MemoryTable;
   playedAgainst: MemoryTable;
 }> {
+  noStore();
   const matches = await prisma.match.findMany({
     where: { leagueId: leagueId, finished: true },
   });

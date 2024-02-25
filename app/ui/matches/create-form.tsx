@@ -22,7 +22,6 @@ export default function CreateMatchesForm({
   const handlePlayersChange = (index: number, value: string) => {
     const p = playersIds.map((id, idx) => (idx !== index ? id : value));
     setPlayersIds(p);
-    console.log(playersIds);
   };
 
   const [selectedDate, setSelectedDay] = useState(new Date());
@@ -34,7 +33,6 @@ export default function CreateMatchesForm({
     setSelectedOption(value);
   };
 
-  console.log(`leagueId: ${leagueId}`);
   const generateMatchesWithLeagueId = generateMatches.bind(null, leagueId);
 
   return (
@@ -131,7 +129,6 @@ function UserSelect({
   handler: (index: number, value: string) => void;
 }) {
   const id = `customerId-${index}`;
-  console.log(id);
 
   return (
     <div className="relative">

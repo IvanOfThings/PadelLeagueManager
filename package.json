@@ -12,6 +12,7 @@
     "prisma:migrate": "npx prisma migrate dev --name",
     "seed:deno": "/Users/ivan.perea/.deno/bin/deno run ./scripts/load-test-data.ts",
     "seed:node": "npx tsx ./scripts/load-test-data.ts",
+    "seed:node:test": "npx tsx ./scripts/load-data-from-liga-test.ts",
     "start": "next start",
     "test": "vitest"
   },
@@ -26,7 +27,7 @@
     "clsx": "^2.0.0",
     "data-structure-typed": "^1.52.0",
     "next": "^14.0.2",
-    "next-auth": "^5.0.0-beta.5",
+    "next-auth": "^5.0.0-beta.13",
     "nextjs-tui-date-picker": "^2.2.2",
     "postcss": "8.4.31",
     "react": "18.2.0",

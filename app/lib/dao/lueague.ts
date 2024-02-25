@@ -2,8 +2,10 @@ import { Match, Team } from '@prisma/client';
 import { LeagueParticipant } from '../definitions';
 import prisma from '../prisma';
 import { fetchTeamsFromMatches } from './teams';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function UpdateScores(leagueId: string): Promise<void> {
+  noStore();
   try {
     const participants = await fetchLeagueParticipants(leagueId);
 
@@ -88,6 +90,7 @@ export function mapParticipants({
 export async function fetchLeagueParticipants(
   leagueId: string,
 ): Promise<Record<string, LeagueParticipant>> {
+  noStore();
   const participants = await prisma.participates.findMany({
     where: { leagueId },
   });
@@ -102,6 +105,7 @@ export const updateParticipantScore = (
   matches: Match[],
   teams: Team[],
 ): Record<string, LeagueParticipant> => {
+  noStore();
   matches.sort((a, b) => a.date.getTime() - b.date.getTime());
   const updatedParticipants = {} as Record<string, LeagueParticipant>;
 
@@ -133,7 +137,6 @@ export const updateParticipantScore = (
         teamsMap.set(looserTeamId, (teamsMap.get(looserTeamId) ?? 0) + 1);
         // Winner team only scores if have played less than K_MAX_MATCHES as a team
         if ((teamsMap.get(winnerTeamId) ?? 0) <= K_MAX_MATCHES) {
-          console.log('winnerTeam.driveId', winnerTeam.driveId);
           updatedParticipants[winnerTeam.driveId].score.points += 1;
           updatedParticipants[winnerTeam.reversId].score.points += 1;
         }

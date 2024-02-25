@@ -45,7 +45,6 @@ export async function fetchLeagueById(leagueId: string): Promise<League> {
       where: { id: leagueId },
     });
 
-    console.log('Data fetch completed after 3 seconds.');
     return {
       ...league,
       participants: await prisma.participates.count({
@@ -258,7 +257,6 @@ export async function fetchFilteredCustomers(query: string) {
 
 export async function getUser(email: string): Promise<User | undefined> {
   try {
-    console.log('Fetching user:', email);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new Error('Failed to fetch user.');
@@ -279,6 +277,7 @@ export async function fetchParticipants(leagueId: string) {
 export async function fetchLeagueAndParticipants(
   leagueId: string,
 ): Promise<{ league: League; sortedParticipants: LeagueParticipant[] }> {
+  noStore();
   const league = await fetchLeagueById(leagueId);
   const participants = await fetchLeagueParticipants(leagueId);
   const sortedParticipants = Object.values(participants).sort(
@@ -298,6 +297,7 @@ export async function fetchLeagueAndParticipants(
 }
 
 export async function fetchPlayersByLeague(leagueId: string): Promise<User[]> {
+  noStore();
   const participantIds = await prisma.participates.findMany({
     where: {
       leagueId: leagueId,
@@ -310,6 +310,7 @@ export async function fetchUsersParticipants(
   userIds: string[],
   leagueId: string,
 ): Promise<UserParticipant[]> {
+  noStore();
   const players = await prisma.user.findMany({
     where: {
       id: {
@@ -345,6 +346,7 @@ export async function fetchUsersParticipants(
 }
 
 export async function fetchUsers(userIds: string[]): Promise<User[]> {
+  noStore();
   const players = await prisma.user.findMany({
     where: {
       id: {

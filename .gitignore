@@ -37,3 +37,6 @@ yarn-error.log*
 next-env.d.ts
 scripts/testing-league-only.test.ts
 scripts/load-data-from-liga-test.test.ts
+scripts/milan-league.ts
+scripts/load-data-from-milan-league.ts
+scripts/update-data-from-milan-league.ts

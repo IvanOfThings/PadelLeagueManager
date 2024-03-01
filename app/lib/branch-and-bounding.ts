@@ -81,7 +81,7 @@ export const scorePlayer = ({
   const partner = players[evalPlayer + 1];
   if (player.guest) {
     if (partner.guest) {
-      return 10;
+      return playWith.getMaxScore() * 2 + playAgainst.getMaxScore() * 2;
     }
     return -15;
   }

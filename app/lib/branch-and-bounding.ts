@@ -78,8 +78,12 @@ export const scorePlayer = ({
   evalPlayer: number;
 }): number => {
   const player = players[evalPlayer];
+  const partner = players[evalPlayer + 1];
   if (player.guest) {
-    return 0;
+    if (partner.guest) {
+      return 10;
+    }
+    return -15;
   }
   const matchUsers = buildUsersMatchList({
     players,

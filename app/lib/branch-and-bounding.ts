@@ -29,10 +29,10 @@ export const sortArrayForPlayer = ({
   matchUsers,
   playerIndex,
 }: {
-  matchUsers: User[];
+  matchUsers: UserParticipant[];
   playerIndex: number;
-}): User[] => {
-  const sorted = new Array<User>();
+}): UserParticipant[] => {
+  const sorted = new Array<UserParticipant>();
   sorted.push(matchUsers[playerIndex]);
   if (matchUsers.length > getPlayerPair(playerIndex)) {
     sorted.push(matchUsers[getPlayerPair(playerIndex)]);
@@ -77,14 +77,6 @@ export const scorePlayer = ({
   partialSolution: number[];
   evalPlayer: number;
 }): number => {
-  const player = players[evalPlayer];
-  const partner = players[evalPlayer + 1];
-  if (player.guest) {
-    if (partner.guest) {
-      return playWith.getMaxScore() * 2 + playAgainst.getMaxScore() * 2;
-    }
-    return -15;
-  }
   const matchUsers = buildUsersMatchList({
     players,
     partialSolution,
@@ -102,6 +94,7 @@ export const scorePlayer = ({
       ? playWith.getScore(
           partialUsersSortedArray[0].id,
           partialUsersSortedArray[1].id,
+          partialUsersSortedArray[0].guest || partialUsersSortedArray[1].guest,
         )
       : playWith.getMaxScore());
   score =
@@ -110,6 +103,7 @@ export const scorePlayer = ({
       ? playAgainst.getScore(
           partialUsersSortedArray[0].id,
           partialUsersSortedArray[2].id,
+          partialUsersSortedArray[0].guest || partialUsersSortedArray[2].guest,
         )
       : playAgainst.getMaxScore());
   score =
@@ -118,6 +112,7 @@ export const scorePlayer = ({
       ? playAgainst.getScore(
           partialUsersSortedArray[0].id,
           partialUsersSortedArray[3].id,
+          partialUsersSortedArray[0].guest || partialUsersSortedArray[3].guest,
         )
       : playAgainst.getMaxScore());
   return score;

@@ -52,12 +52,12 @@ export const buildUsersMatchList = ({
   partialSolution,
   evalPlayer,
 }: {
-  players: User[];
+  players: UserParticipant[];
   partialSolution: number[];
   evalPlayer: number;
-}): User[] => {
+}): UserParticipant[] => {
   const { min, max } = obtainMinAndMax({ playerIndex: evalPlayer });
-  const usersVector = new Array<User>();
+  const usersVector = new Array<UserParticipant>();
   for (let i = min; i <= max && i < partialSolution.length; i++) {
     usersVector.push(players[partialSolution[i]]);
   }

@@ -30,7 +30,8 @@ export class MemoryTable {
     });
   }
 
-  public getScore(player1: string, player2: string) {
+  public getScore(player1: string, player2: string, isGuest: boolean = false) {
+    if (isGuest) return 0;
     const matches = this.data.get(player1)?.get(player2) ?? 0;
     return this.coefficients.get(matches) ?? 10;
   }

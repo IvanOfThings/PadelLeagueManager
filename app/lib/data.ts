@@ -282,20 +282,6 @@ export async function fetchLeagueAndParticipants(
   const participants = await fetchLeagueParticipants(leagueId);
 
   const sortedParticipants = sortParticipants(Object.values(participants));
-  /*
-  const sortedParticipants = Object.values(participants).sort(
-    (a: LeagueParticipant, b: LeagueParticipant) => {
-      if (a.score.points > b.score.points) {
-        return -1;
-      } else if (a.score.points < b.score.points) {
-        return 1;
-      }
-      if (a.score.playedMatches < b.score.playedMatches) {
-        return -1;
-      }
-      return 1;
-    },
-  );*/
   return { league, sortedParticipants };
 }
 

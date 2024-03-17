@@ -1,7 +1,6 @@
 import { fetchLeagueAndParticipants, fetchLeagueById } from '@/app/lib/data';
 import { LeagueParticipant } from '@/app/lib/definitions';
 import TableTitle from '../table-title';
-import { Button } from '../button';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 

@@ -10,6 +10,7 @@ import {
   DeleteMatch,
   addResults,
   createMatches,
+  fetchMatches,
 } from './dao/matches';
 import { Match } from './definitions';
 import { v4 } from 'uuid';
@@ -140,12 +141,15 @@ export async function generateMatches(leagueId: string, formData: FormData) {
 
   const players = await fetchUsersParticipants(playersIds, leagueId);
 
+  const playedMatches = await fetchMatches(leagueId, true);
+
   const matches = buildMatchesFromList({
     players,
     leagueId,
     playersCount,
     rounds,
     date: new Date(matchDate),
+    playedMatches,
   });
   await createMatches(matches);
 

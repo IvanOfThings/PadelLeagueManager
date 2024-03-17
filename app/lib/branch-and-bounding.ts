@@ -3,6 +3,8 @@ import { Match, User, UserParticipant } from './definitions';
 import { MemoryTable } from './memoryTable';
 import { NodeItem, createMaxPriorityQueue } from './maxPriorityQueue';
 import { v4 as uuidv4 } from 'uuid';
+import { MemoryTableAgainst } from './memoryTableAgainst';
+import { MemoryTableWith } from './memoryTableWith';
 
 export const obtainMinAndMax = ({
   playerIndex,
@@ -269,15 +271,16 @@ export const buildMatchesFromList = ({
   leagueId,
   rounds,
   date,
+  playedMatches,
 }: {
   players: UserParticipant[];
   leagueId: string;
   playersCount: number;
   rounds: number;
   date: Date;
+  playedMatches: Match[];
 }): Match[][] => {
-  const playWith = new MemoryTable([25, 15, -5]);
-  const playAgainst = new MemoryTable([7, 5, 3, 2, 1]);
+  const { playWith, playAgainst } = buildMemoryTables(playedMatches);
   const matches: Match[][] = [];
   for (let i = 0; i < rounds; i++) {
     const shuffledPlayers = generateMatching({
@@ -325,4 +328,35 @@ export const buildMatchesFromList = ({
     matches.push(round);
   }
   return matches;
+};
+
+export const buildMemoryTables = (
+  playedMatches: Match[],
+): { playAgainst: MemoryTableAgainst; playWith: MemoryTableWith } => {
+  const playWith = new MemoryTableAgainst();
+  const playAgainst = new MemoryTableWith();
+
+  playedMatches.forEach((match) => {
+    if (match.finished && match.official) {
+      playWith.addItem(match.teamLocal.drive.id, match.teamLocal.reverse.id);
+      playWith.addItem(
+        match.teamVisitor.drive.id,
+        match.teamVisitor.reverse.id,
+      );
+      playAgainst.addItem(match.teamLocal.drive.id, match.teamVisitor.drive.id);
+      playAgainst.addItem(
+        match.teamLocal.drive.id,
+        match.teamVisitor.reverse.id,
+      );
+      playAgainst.addItem(
+        match.teamLocal.reverse.id,
+        match.teamVisitor.drive.id,
+      );
+      playAgainst.addItem(
+        match.teamLocal.reverse.id,
+        match.teamVisitor.reverse.id,
+      );
+    }
+  });
+  return { playWith, playAgainst };
 };

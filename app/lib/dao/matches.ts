@@ -244,6 +244,7 @@ export async function fetchUnconfirmedMatches(
   return fetchMatches(leagueId, false);
 }
 
+/*
 export async function getMatchesPD(leagueId: string): Promise<{
   playedWith: MemoryTable;
   playedAgainst: MemoryTable;
@@ -282,3 +283,4 @@ export async function getMatchesPD(leagueId: string): Promise<{
   });
   return { playedWith, playedAgainst };
 }
+*/

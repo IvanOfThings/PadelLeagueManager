@@ -287,7 +287,7 @@ export async function fetchLeagueAndParticipants(
       } else if (a.score.points < b.score.points) {
         return 1;
       }
-      if (a.score.playedMatches < b.score.winMatches) {
+      if (a.score.playedMatches < b.score.playedMatches) {
         return -1;
       }
       return 1;

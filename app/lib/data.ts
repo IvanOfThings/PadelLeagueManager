@@ -11,7 +11,7 @@ import {
   LeagueParticipant,
   UserParticipant,
 } from './definitions';
-import { formatCurrency } from './utils';
+import { formatCurrency, sortParticipants } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import prisma from './prisma';
 import { auth } from '@/auth';
@@ -280,6 +280,9 @@ export async function fetchLeagueAndParticipants(
   noStore();
   const league = await fetchLeagueById(leagueId);
   const participants = await fetchLeagueParticipants(leagueId);
+
+  const sortedParticipants = sortParticipants(Object.values(participants));
+  /*
   const sortedParticipants = Object.values(participants).sort(
     (a: LeagueParticipant, b: LeagueParticipant) => {
       if (a.score.points > b.score.points) {
@@ -292,7 +295,7 @@ export async function fetchLeagueAndParticipants(
       }
       return 1;
     },
-  );
+  );*/
   return { league, sortedParticipants };
 }
 

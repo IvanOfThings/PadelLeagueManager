@@ -1,4 +1,4 @@
-import { Revenue } from './definitions';
+import { LeagueParticipant, Revenue } from './definitions';
 
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {
@@ -102,3 +102,29 @@ export const shuffle = <T>(array: T[]): T[] => {
 
   return array;
 };
+
+export function sortParticipants(
+  participants: Array<LeagueParticipant>,
+): LeagueParticipant[] {
+  const sortedParticipants = Object.values(participants).sort(
+    (a: LeagueParticipant, b: LeagueParticipant) => {
+      if (a.score.points > b.score.points) {
+        return -1;
+      } else if (a.score.points < b.score.points) {
+        return 1;
+      }
+      if (
+        a.score.playedMatches < b.score.playedMatches &&
+        a.score.playedMatches > 0 &&
+        b.score.playedMatches > 0
+      ) {
+        return -1;
+      }
+      if (b.score.playedMatches <= 0) {
+        return -1;
+      }
+      return 1;
+    },
+  );
+  return sortedParticipants;
+}

@@ -1,4 +1,5 @@
 import { DEFAULT_MAX_VERSION } from 'tls';
+import { UserParticipant } from './definitions';
 
 export class MemoryTable {
   protected data: Map<string, Map<string, number>>;
@@ -48,8 +49,24 @@ export class MemoryTable {
     return this.coefficients.get(matches) ?? 10;
   }
 
-  public getMaxScore() {
-    return this.coefficients.get(0) ?? 10;
+  public getMaxScore(
+    player: string,
+    restPlayers: Array<UserParticipant>,
+    isGuest: boolean = false,
+  ): number {
+    let max = 0;
+    // Return max score for current player with all other players
+    restPlayers.forEach((player2) => {
+      const score = this.getScore(player, player2.id, isGuest || player2.guest);
+      if (score > max) {
+        max = score;
+      }
+    });
+    return max;
+  }
+
+  public getAmountOfMatches(player: string): number {
+    return this.data.get(player)?.size ?? 0;
   }
 
   public ToString(): string {

@@ -1,8 +1,8 @@
 import { MemoryTable } from './memoryTable';
 
 export class MemoryTableWith extends MemoryTable {
-  constructor() {
-    super([25, 15, -5]);
+  constructor(weights?: number[]) {
+    super(weights ? weights : [150, 10, 0]);
   }
 
   public getScore(
@@ -10,16 +10,20 @@ export class MemoryTableWith extends MemoryTable {
     player2: string,
     isGuest: boolean = false,
   ): number {
+    /*
     const matchesCount =
       [...(this.data.get(player1) ?? []).values()].reduce(
         (acc, curr) => acc + curr,
         0,
       ) + 1;
+      */
     const result = this.getInternalScore(player1, player2, isGuest);
+    return result;
+    /*
     if (result > 0) {
       return result / matchesCount;
     } else {
       return result * matchesCount;
-    }
+    }*/
   }
 }

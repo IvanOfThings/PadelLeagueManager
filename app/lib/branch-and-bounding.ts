@@ -1,7 +1,12 @@
 import { MaxPriorityQueue } from 'data-structure-typed';
-import { Match, User, UserParticipant } from './definitions';
+import {
+  Match,
+  User,
+  UserParticipant,
+  UserParticipantWithMatches,
+} from './definitions';
 import { MemoryTable } from './memoryTable';
-import { NodeItem, createMaxPriorityQueue } from './maxPriorityQueue';
+import { NodeItem, createMinPriorityQueue } from './maxPriorityQueue';
 import { v4 as uuidv4 } from 'uuid';
 import { MemoryTableAgainst } from './memoryTableAgainst';
 import { MemoryTableWith } from './memoryTableWith';
@@ -72,12 +77,14 @@ export const scorePlayer = ({
   players,
   partialSolution,
   evalPlayer,
+  leftElements,
 }: {
   playWith: MemoryTable;
   playAgainst: MemoryTable;
   players: UserParticipant[];
   partialSolution: number[];
   evalPlayer: number;
+  leftElements: number[];
 }): number => {
   const matchUsers = buildUsersMatchList({
     players,
@@ -89,6 +96,9 @@ export const scorePlayer = ({
     playerIndex: matchPlayer,
     matchUsers,
   });
+  const restPlayers = players
+    .filter((p, index) => leftElements.includes(index))
+    .map((p) => p);
   let score = 0;
   score =
     score +
@@ -98,7 +108,11 @@ export const scorePlayer = ({
           partialUsersSortedArray[1].id,
           partialUsersSortedArray[0].guest || partialUsersSortedArray[1].guest,
         )
-      : playWith.getMaxScore());
+      : playWith.getMaxScore(
+          partialUsersSortedArray[0].id,
+          restPlayers,
+          partialUsersSortedArray[0].guest,
+        ));
   score =
     score +
     (partialUsersSortedArray[2]
@@ -107,7 +121,11 @@ export const scorePlayer = ({
           partialUsersSortedArray[2].id,
           partialUsersSortedArray[0].guest || partialUsersSortedArray[2].guest,
         )
-      : playAgainst.getMaxScore());
+      : playAgainst.getMaxScore(
+          partialUsersSortedArray[0].id,
+          restPlayers,
+          partialUsersSortedArray[0].guest,
+        ));
   score =
     score +
     (partialUsersSortedArray[3]
@@ -116,7 +134,11 @@ export const scorePlayer = ({
           partialUsersSortedArray[3].id,
           partialUsersSortedArray[0].guest || partialUsersSortedArray[3].guest,
         )
-      : playAgainst.getMaxScore());
+      : playAgainst.getMaxScore(
+          partialUsersSortedArray[0].id,
+          restPlayers,
+          partialUsersSortedArray[0].guest,
+        ));
   return score;
 };
 
@@ -126,12 +148,14 @@ export const scoreMatch = ({
   players,
   partialSolution,
   evalMatch,
+  leftElements,
 }: {
   playWith: MemoryTable;
   playAgainst: MemoryTable;
   players: UserParticipant[];
   partialSolution: number[];
   evalMatch: number;
+  leftElements: number[];
 }): number => {
   const minPlayerMatch = evalMatch * 4;
   const maxPlayerMatch = minPlayerMatch + 4;
@@ -146,9 +170,17 @@ export const scoreMatch = ({
           players,
           partialSolution,
           evalPlayer: i,
+          leftElements,
         });
     } else {
-      score = score + playWith.getMaxScore() + 2 * playAgainst.getMaxScore();
+      const restPlayers = players
+        .filter((p, index) => leftElements.includes(index))
+        .map((p) => p);
+      score =
+        score +
+        playWith.getMaxScore(players[i].id, restPlayers, players[i].guest) +
+        2 *
+          playAgainst.getMaxScore(players[i].id, restPlayers, players[i].guest);
     }
   }
   return score;
@@ -159,14 +191,18 @@ export const estimatePartialSolutionWeight = ({
   playAgainst,
   players,
   partialSolution,
+  leftElements,
 }: {
   playWith: MemoryTable;
   playAgainst: MemoryTable;
-  players: UserParticipant[];
+  players: UserParticipantWithMatches[];
   partialSolution: number[];
-}) => {
+  leftElements: number[];
+}): { score: number; partialScore: number } => {
   const matches = Math.ceil(players.length / 4);
   let score = 0;
+  let partialScore = 0;
+  const fullMatches = Math.ceil(partialSolution.length / 4);
   for (let i = 0; i < matches; i++) {
     const matchScore = scoreMatch({
       playWith,
@@ -174,10 +210,14 @@ export const estimatePartialSolutionWeight = ({
       players,
       partialSolution,
       evalMatch: i,
+      leftElements,
     });
     score = score + matchScore;
+    if (i < fullMatches) {
+      partialScore = score;
+    }
   }
-  return score;
+  return { score, partialScore };
 };
 
 export const expand = ({
@@ -188,49 +228,93 @@ export const expand = ({
   playWith,
   playAgainst,
   maxScore,
+  scoreCache,
+  partialScoreCache,
 }: {
   p: MaxPriorityQueue<NodeItem>;
   elements: Array<number>;
   partialSolution: Array<number>;
-  players: UserParticipant[];
+  players: UserParticipantWithMatches[];
   playWith: MemoryTable;
   playAgainst: MemoryTable;
   maxScore: number;
+  scoreCache: Map<string, number>;
+  partialScoreCache: Map<string, number>;
 }): void => {
   for (let i = 0; i < elements.length; i++) {
     const partSolution = [...partialSolution, elements[i]];
-    const restElements = [...elements.slice(0, i), ...elements.slice(i + 1)];
-    const score = estimatePartialSolutionWeight({
-      playWith,
-      playAgainst,
-      players,
-      partialSolution: partSolution,
-    });
-    if (score > maxScore) {
-      p.add({ solution: partSolution, elements: restElements, score });
+    const cacheKey = buildCacheKey(partSolution);
+    // let score = scoreCache.get(cacheKey);
+    let partialScore = partialScoreCache.get(cacheKey) ?? 0;
+    const leftElements = [...elements.slice(0, i), ...elements.slice(i + 1)];
+    // if (!score) {
+    const { score: estimatedScore, partialScore: partScore } =
+      estimatePartialSolutionWeight({
+        playWith,
+        playAgainst,
+        players,
+        partialSolution: partSolution,
+        leftElements,
+      });
+    // score = estimatedScore;
+    partialScore = partScore;
+    // updateCache(scoreCache, cacheKey, score);
+    // updateCache(partialScoreCache, cacheKey, partialScore);
+    //}
+    const item: NodeItem = {
+      solution: partSolution,
+      elements: leftElements,
+      score: estimatedScore,
+      partialScore,
+    };
+    if (estimatedScore > maxScore) {
+      p.add(item);
     }
   }
 };
 
+export const buildCacheKey = (items: Array<number>): string => {
+  return [...items].sort().join('-');
+};
+
+const updateCache = (
+  cache: Map<string, number>,
+  key: string,
+  score: number,
+) => {
+  if (!cache.has(key)) {
+    cache.set(key, score);
+  }
+};
+
 export const generateMatching = ({
+  initialSolution,
   players,
   playWith,
   playAgainst,
 }: {
-  players: UserParticipant[];
+  initialSolution?: UserParticipantWithMatches[];
+  players: UserParticipantWithMatches[];
   playWith: MemoryTable;
   playAgainst: MemoryTable;
-}): number[] => {
-  const memory = new Map<string, number>();
-  const p = createMaxPriorityQueue();
-
-  const solutionCache = new Map<string, number>();
+}): { solution: number[]; score: number } => {
+  const scoreCache = new Map<string, number>();
+  const partialScoreCache = new Map<string, number>();
+  const p = createMinPriorityQueue();
 
   const elements = players.map((_, index) => index);
 
-  let maxScore = 0;
   let item = null;
-  let finalSolution = players.map((_, index) => index);
+  let finalSolution = initialSolution
+    ? initialSolution.map((_, index) => index)
+    : players.map((_, index) => index);
+  let maxScore = estimatePartialSolutionWeight({
+    playWith,
+    playAgainst,
+    players,
+    partialSolution: finalSolution,
+    leftElements: [],
+  }).score;
 
   expand({
     p,
@@ -240,6 +324,8 @@ export const generateMatching = ({
     playWith,
     playAgainst,
     maxScore,
+    scoreCache,
+    partialScoreCache,
   });
 
   while (!p.isEmpty()) {
@@ -247,23 +333,182 @@ export const generateMatching = ({
     if (item) {
       const { solution, elements } = item;
 
-      if (item.elements.length === 0 && item.score > maxScore) {
-        maxScore = item.score;
-        finalSolution = item.solution;
+      if (item.elements.length === 0) {
+        if (item.score > maxScore) {
+          maxScore = item.score;
+          finalSolution = [...item.solution];
+        }
       } else {
-        expand({
-          p,
-          elements,
-          partialSolution: solution,
-          players,
-          playWith,
-          playAgainst,
-          maxScore,
-        });
+        if (item.score > maxScore) {
+          expand({
+            p,
+            elements,
+            partialSolution: solution,
+            players,
+            playWith,
+            playAgainst,
+            maxScore,
+            scoreCache,
+            partialScoreCache,
+          });
+        }
       }
     }
   }
-  return finalSolution;
+  return { solution: finalSolution, score: maxScore };
+};
+
+export const buildMatchesFromList12Elements = ({
+  players,
+  leagueId,
+  rounds,
+  date,
+  playedMatches,
+}: {
+  players: UserParticipant[];
+  leagueId: string;
+  playersCount: number;
+  rounds: number;
+  date: Date;
+  playedMatches: Match[];
+}): { matches: Match[]; score: number }[] => {
+  if (players.length !== 12) {
+    throw new Error('Players must be 12');
+  }
+  if (rounds > 3) {
+    throw new Error('Max rounds is 3');
+  }
+  const { playWith, playAgainst } = buildMemoryTables(playedMatches);
+  const sortedPlayers = [
+    ...sortPlayersByMatchesPlayed({ players, playWith }),
+  ].reverse();
+
+  const initialSolution = buildInitialSolution(sortedPlayers);
+  const matches: { matches: Match[]; score: number }[] = [];
+  const partitions: Map<number, number[][]> = new Map<number, number[][]>([
+    [
+      0,
+      [
+        [0, 1, 2, 3, 4, 5, 6, 7],
+        [8, 9, 10, 11],
+      ],
+    ],
+    [
+      1,
+      [
+        [2, 3, 4, 5, 6, 7, 8, 9],
+        [0, 1, 10, 11],
+      ],
+    ],
+    [
+      2,
+      [
+        [0, 1, 4, 5, 6, 7, 8, 11],
+        [2, 3, 9, 10],
+      ],
+    ],
+  ]);
+
+  for (let iterRounds = 0; iterRounds < rounds; iterRounds++) {
+    const round = new Array<Match>();
+    const elements8 = partitions.get(iterRounds)?.[0] ?? [];
+    const elements4 = partitions.get(iterRounds)?.[1] ?? [];
+    const players8 = initialSolution.filter((_, index) =>
+      elements8.includes(index),
+    );
+    const players4 = initialSolution.filter((_, index) =>
+      elements4.includes(index),
+    );
+    const { solution: solution8, score: score8 } = generateMatching({
+      initialSolution: players8,
+      playAgainst,
+      playWith,
+      players: players8,
+    });
+
+    const mappedSol8 = solution8.map((it) => elements8[it]);
+    buildMatches({
+      solution: mappedSol8,
+      rounds: round,
+      players: initialSolution,
+      playWith,
+      playAgainst,
+      leagueId,
+      date,
+      round: iterRounds,
+    });
+
+    const { solution: solution4, score: score4 } = generateMatching({
+      initialSolution: players4,
+      playAgainst,
+      playWith,
+      players: players4,
+    });
+
+    const mappedSol4 = solution4.map((it) => elements4[it]);
+
+    buildMatches({
+      solution: mappedSol4,
+      rounds: round,
+      players: initialSolution,
+      playWith,
+      playAgainst,
+      leagueId,
+      date,
+      round: iterRounds,
+    });
+
+    matches.push({ matches: round, score: score4 + score8 });
+  }
+  return matches;
+};
+
+const buildMatches = ({
+  solution,
+  rounds,
+  players,
+  playWith,
+  playAgainst,
+  leagueId,
+  date,
+  round,
+}: {
+  solution: number[];
+  rounds: Array<Match>;
+  players: UserParticipant[];
+  playWith: MemoryTableWith;
+  playAgainst: MemoryTableAgainst;
+  leagueId: string;
+  date: Date;
+  round: number;
+}) => {
+  for (let j = 0; j < solution.length; j += 4) {
+    const driveLocal = solution[j];
+    const reverseLocal = solution[j + 1];
+    const driveVisitor = solution[j + 2];
+    const reverseVisitor = solution[j + 3];
+    rounds.push(
+      newMatch({
+        leagueId,
+        players,
+        date,
+        driveLocal,
+        reverseLocal,
+        driveVisitor,
+        reverseVisitor,
+        round,
+      }),
+    );
+    updateCaches({
+      players,
+      playWith,
+      playAgainst,
+      driveLocal,
+      reverseLocal,
+      driveVisitor,
+      reverseVisitor,
+    });
+  }
 };
 
 export const buildMatchesFromList = ({
@@ -279,55 +524,141 @@ export const buildMatchesFromList = ({
   rounds: number;
   date: Date;
   playedMatches: Match[];
-}): Match[][] => {
+}): { matches: Match[]; score: number }[] => {
   const { playWith, playAgainst } = buildMemoryTables(playedMatches);
-  const matches: Match[][] = [];
-  for (let i = 0; i < rounds; i++) {
-    const shuffledPlayers = generateMatching({
+  const sortedPlayers = [
+    ...sortPlayersByMatchesPlayed({ players, playWith }),
+  ].reverse();
+
+  const initialSolution = buildInitialSolution(sortedPlayers);
+  const matches: { matches: Match[]; score: number }[] = [];
+  for (let iterRounds = 0; iterRounds < rounds; iterRounds++) {
+    const { solution, score } = generateMatching({
+      initialSolution,
       playAgainst,
       playWith,
-      players,
+      players: sortedPlayers,
     });
     const round = new Array<Match>();
-    for (let j = 0; j < shuffledPlayers.length; j += 4) {
-      const driveLocal = shuffledPlayers[j];
-      const reverseLocal = shuffledPlayers[j + 1];
-      const driveVisitor = shuffledPlayers[j + 2];
-      const reverseVisitor = shuffledPlayers[j + 3];
-      round.push({
-        leagueId,
-        date: date,
-        localWins: false,
-        teamLocal: {
-          drive: players[driveLocal],
-          reverse: players[reverseLocal],
-        },
-        teamVisitor: {
-          drive: players[driveVisitor],
-          reverse: players[reverseVisitor],
-        },
-        results: [],
-        finished: false,
-        id: uuidv4(),
-        confirmed: false,
-        round: i + 1,
-        official: !(
-          players[driveLocal].guest ||
-          players[reverseLocal].guest ||
-          players[driveVisitor].guest ||
-          players[reverseVisitor].guest
-        ),
+    for (let j = 0; j < solution.length; j += 4) {
+      const driveLocal = solution[j];
+      const reverseLocal = solution[j + 1];
+      const driveVisitor = solution[j + 2];
+      const reverseVisitor = solution[j + 3];
+      round.push(
+        newMatch({
+          leagueId,
+          players: sortedPlayers,
+          date,
+          driveLocal,
+          reverseLocal,
+          driveVisitor,
+          reverseVisitor,
+          round: iterRounds + 1,
+        }),
+      );
+      updateCaches({
+        players: sortedPlayers,
+        playWith,
+        playAgainst,
+        driveLocal,
+        reverseLocal,
+        driveVisitor,
+        reverseVisitor,
       });
-      playWith.addItem(players[driveLocal].id, players[reverseLocal].id);
-      playWith.addItem(players[driveVisitor].id, players[reverseVisitor].id);
-      playAgainst.addItem(players[driveLocal].id, players[driveVisitor].id);
-      playAgainst.addItem(players[driveLocal].id, players[reverseVisitor].id);
-      playAgainst.addItem(players[reverseLocal].id, players[driveVisitor].id);
-      playAgainst.addItem(players[reverseLocal].id, players[reverseVisitor].id);
     }
-    matches.push(round);
+    matches.push({ matches: round, score });
   }
   return matches;
+};
+
+export const buildInitialSolution = (
+  sortedSolution: UserParticipantWithMatches[],
+) => {
+  const initialSolution: UserParticipantWithMatches[] = [];
+  const guest = sortedSolution.filter((player) => player.guest);
+  const nonGuest = sortedSolution.filter((player) => !player.guest);
+  const amountOfMatchesWithNoGuest = Math.floor(
+    (sortedSolution.length - guest.length) / 4,
+  );
+  for (let i = 0; i < amountOfMatchesWithNoGuest; i++) {
+    initialSolution.push(nonGuest[i * 2]);
+    initialSolution.push(nonGuest[i * 2 + 1]);
+    initialSolution.push(nonGuest[nonGuest.length - 1 - i * 2]);
+    initialSolution.push(nonGuest[nonGuest.length - 2 - i * 2]);
+  }
+  const rest = nonGuest.filter((player) => !initialSolution.includes(player));
+  return [...initialSolution, ...rest, ...guest];
+};
+
+export const updateCaches = ({
+  players,
+  playWith,
+  playAgainst,
+  driveLocal,
+  reverseLocal,
+  driveVisitor,
+  reverseVisitor,
+}: {
+  players: UserParticipant[];
+  playWith: MemoryTableWith;
+  playAgainst: MemoryTableAgainst;
+  driveLocal: number;
+  reverseLocal: number;
+  driveVisitor: number;
+  reverseVisitor: number;
+}): void => {
+  playWith.addItem(players[driveLocal].id, players[reverseLocal].id);
+  playWith.addItem(players[driveVisitor].id, players[reverseVisitor].id);
+  playAgainst.addItem(players[driveLocal].id, players[driveVisitor].id);
+  playAgainst.addItem(players[driveLocal].id, players[reverseVisitor].id);
+  playAgainst.addItem(players[reverseLocal].id, players[driveVisitor].id);
+  playAgainst.addItem(players[reverseLocal].id, players[reverseVisitor].id);
+};
+
+const newMatch = ({
+  leagueId,
+  players,
+  date,
+  driveLocal,
+  reverseLocal,
+  driveVisitor,
+  reverseVisitor,
+  round,
+}: {
+  leagueId: string;
+  players: UserParticipant[];
+  date: Date;
+  driveLocal: number;
+  reverseLocal: number;
+  driveVisitor: number;
+  reverseVisitor: number;
+  round: number;
+}): Match => {
+  return {
+    leagueId,
+    date: date,
+    localWins: false,
+    teamLocal: {
+      drive: players[driveLocal],
+      reverse: players[reverseLocal],
+    },
+    teamVisitor: {
+      drive: players[driveVisitor],
+      reverse: players[reverseVisitor],
+    },
+    results: [],
+    finished: false,
+    id: uuidv4(),
+    confirmed: false,
+    round,
+    official: !(
+      players[driveLocal].guest ||
+      players[reverseLocal].guest ||
+      players[driveVisitor].guest ||
+      players[reverseVisitor].guest
+    ),
+  };
 };
 
 export const buildMemoryTables = (
@@ -359,4 +690,27 @@ export const buildMemoryTables = (
     }
   });
   return { playWith, playAgainst };
+};
+
+export const sortPlayersByMatchesPlayed = ({
+  players,
+  playWith,
+}: {
+  playWith: MemoryTableWith;
+  players: UserParticipant[];
+}): UserParticipantWithMatches[] => {
+  const playersWithMatches: UserParticipantWithMatches[] = players.map(
+    (player) => ({
+      ...player,
+      playedMatches: playWith.getAmountOfMatches(player.id),
+    }),
+  );
+  return [...playersWithMatches].sort((a, b) => {
+    if (b.guest) {
+      return -1;
+    }
+    const aMatches = a.playedMatches;
+    const bMatches = b.playedMatches;
+    return aMatches - bMatches;
+  });
 };

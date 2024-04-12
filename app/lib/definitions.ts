@@ -19,6 +19,11 @@ export type UserParticipant = {
   guest: boolean;
 } & User;
 
+export type UserParticipantWithMatches = {
+  guest: boolean;
+  playedMatches: number;
+} & User;
+
 export type Team = { drive: User; reverse: User; id: string | null };
 
 export type LeagueParticipant = {

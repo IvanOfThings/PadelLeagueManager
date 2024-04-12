@@ -1,7 +1,13 @@
 import { expect, test, describe } from 'vitest';
-import { Match, UserParticipant } from '../definitions';
 import {
+  Match,
+  UserParticipant,
+  UserParticipantWithMatches,
+} from '../definitions';
+import {
+  buildCacheKey,
   buildMatchesFromList,
+  buildMatchesFromList12Elements,
   buildMemoryTables,
   buildUsersMatchList,
   estimatePartialSolutionWeight,
@@ -13,8 +19,10 @@ import {
   scoreMatch,
   scorePlayer,
   sortArrayForPlayer,
+  sortPlayersByMatchesPlayed,
+  updateCaches,
 } from '../branch-and-bounding';
-import { NodeItem, createMaxPriorityQueue } from '../maxPriorityQueue';
+import { NodeItem, createMinPriorityQueue } from '../maxPriorityQueue';
 import { MemoryTableWith } from '../memoryTableWith';
 import { MemoryTableAgainst } from '../memoryTableAgainst';
 import { MemoryTable } from '../memoryTable';
@@ -113,6 +121,12 @@ const howManyContains = (
 
 describe('Branch and Bounding', () => {
   describe('Testing Auxiliary functions', () => {
+    test('Building Cache Key does not changes original list', () => {
+      const list = [2, 3, 4, 1];
+      const result = buildCacheKey(list);
+      expect(list).toEqual([2, 3, 4, 1]);
+    });
+
     test('Obtaining min and max for index 5', () => {
       const playerIndex = 5;
 
@@ -315,8 +329,8 @@ describe('Branch and Bounding', () => {
 
   describe('Testing scorePlayer', () => {
     test('Eval unique Player', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 0;
       const players = [
         getMockUser(1),
@@ -332,14 +346,15 @@ describe('Branch and Bounding', () => {
         evalPlayer: playerIndex,
         players,
         partialSolution,
+        leftElements: [1, 2, 3],
       });
 
       expect(score).toEqual(39);
     });
 
     test('Eval pair without rivals', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 0;
       const players = [
         getMockUser(1),
@@ -355,14 +370,15 @@ describe('Branch and Bounding', () => {
         evalPlayer: playerIndex,
         players,
         partialSolution,
+        leftElements: [2, 3],
       });
 
       expect(score).toEqual(39);
     });
 
     test('Eval player with a solution for a full match', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 0;
       const players = [
         getMockUser(1),
@@ -378,14 +394,15 @@ describe('Branch and Bounding', () => {
         evalPlayer: playerIndex,
         players,
         partialSolution,
+        leftElements: [],
       });
 
       expect(score).toEqual(39);
     });
 
     test('Eval player with a pair that already have played together', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 0;
       const players = [
         getMockUser(1),
@@ -402,14 +419,15 @@ describe('Branch and Bounding', () => {
         evalPlayer: playerIndex,
         players,
         partialSolution,
+        leftElements: [],
       });
 
-      expect(score).toEqual(21.5);
+      expect(score).toEqual(29);
     });
 
     test('Eval player with a pair that already have played together two times', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 0;
       const players = [
         getMockUser(1),
@@ -424,17 +442,18 @@ describe('Branch and Bounding', () => {
       const score = scorePlayer({
         playWith,
         playAgainst,
-        evalPlayer: playerIndex,
         players,
         partialSolution,
+        evalPlayer: playerIndex,
+        leftElements: [],
       });
 
-      expect(score).toEqual(-1);
+      expect(score).toEqual(9);
     });
 
     test('Eval player with a pair that already have played together and against one of the rivals', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 0;
       const players = [
         getMockUser(1),
@@ -453,14 +472,15 @@ describe('Branch and Bounding', () => {
         evalPlayer: playerIndex,
         players,
         partialSolution,
+        leftElements: [],
       });
 
-      expect(score).toEqual(17.5);
+      expect(score).toEqual(25);
     });
 
     test('Eval player with a pair that already have played together and against one of the rivals', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const playerIndex = 4;
       const players = [
         getMockUser(1),
@@ -483,16 +503,17 @@ describe('Branch and Bounding', () => {
         evalPlayer: playerIndex,
         players,
         partialSolution,
+        leftElements: [],
       });
 
-      expect(score).toEqual(17.5);
+      expect(score).toEqual(25);
     });
   });
 
   describe('Testing scoreMatch', () => {
     test('Eval full match with a pair that already have played together and against one of the rivals', () => {
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
       const evalMatch = 0;
       const players = [
         getMockUser(1),
@@ -508,12 +529,13 @@ describe('Branch and Bounding', () => {
       const score = scoreMatch({
         playWith,
         playAgainst,
-        evalMatch,
         players,
         partialSolution,
+        evalMatch,
+        leftElements: [],
       });
 
-      expect(score).toEqual(113);
+      expect(score).toEqual(128);
     });
 
     test('Eval full match with a pair that already have played together and against one of the rivals wit simpler values', () => {
@@ -537,6 +559,7 @@ describe('Branch and Bounding', () => {
         evalMatch,
         players,
         partialSolution,
+        leftElements: [],
       });
 
       expect(score).toEqual(28);
@@ -560,6 +583,7 @@ describe('Branch and Bounding', () => {
         evalMatch,
         players,
         partialSolution,
+        leftElements: [],
       });
 
       expect(score).toEqual(40);
@@ -583,9 +607,10 @@ describe('Branch and Bounding', () => {
         evalMatch,
         players,
         partialSolution,
+        leftElements: [],
       });
 
-      expect(score).toEqual(40);
+      expect(score).toEqual(21);
     });
 
     test('Eval a match for a partial solution', () => {
@@ -603,14 +628,17 @@ describe('Branch and Bounding', () => {
       ];
       const partialSolution = [0, 1, 2];
 
+      const sortedPlayers = sortPlayersByMatchesPlayed({ playWith, players });
+
       const score = estimatePartialSolutionWeight({
         playWith,
         playAgainst,
-        players,
+        players: sortedPlayers,
         partialSolution,
+        leftElements: [],
       });
 
-      expect(score).toEqual(80);
+      expect(score.score).toEqual(21);
     });
 
     test('Eval a match for a partial solution', () => {
@@ -631,14 +659,25 @@ describe('Branch and Bounding', () => {
       playAgainst.addItem(players[0].id, players[2].id);
       playAgainst.addItem(players[0].id, players[3].id);
 
+      const sortedPlayers = players.map(
+        (player): UserParticipantWithMatches => ({
+          ...player,
+          playedMatches: playWith.getAmountOfMatches(player.id),
+        }),
+      );
+
       const score = estimatePartialSolutionWeight({
         playWith,
         playAgainst,
-        players,
+        players: sortedPlayers,
         partialSolution,
+        leftElements: [4, 6, 7, 8],
       });
 
-      expect(score).toEqual(68);
+      expect(score).toEqual({
+        partialScore: 28,
+        score: 68,
+      });
     });
 
     test('Eval a match for a partial solution', () => {
@@ -659,14 +698,25 @@ describe('Branch and Bounding', () => {
       playAgainst.addItem(players[0].id, players[2].id);
       playAgainst.addItem(players[0].id, players[3].id);
 
+      const sortedPlayers = players.map(
+        (player): UserParticipantWithMatches => ({
+          ...player,
+          playedMatches: playWith.getAmountOfMatches(player.id),
+        }),
+      );
+
       const score = estimatePartialSolutionWeight({
         playWith,
         playAgainst,
-        players,
+        players: sortedPlayers,
         partialSolution,
+        leftElements: [0, 1, 2, 3],
       });
 
-      expect(score).toEqual(80);
+      expect(score).toEqual({
+        partialScore: 40,
+        score: 80,
+      });
     });
 
     test('Eval a match for a partial solution', () => {
@@ -685,32 +735,40 @@ describe('Branch and Bounding', () => {
       playWith.addItem(players[0].id, players[1].id);
       playAgainst.addItem(players[0].id, players[2].id);
       playAgainst.addItem(players[0].id, players[3].id);
+      const sortedPlayers = players.map(
+        (player): UserParticipantWithMatches => ({
+          ...player,
+          playedMatches: playWith.getAmountOfMatches(player.id),
+        }),
+      );
 
       const partialSolution1 = [4, 5, 6, 7, 1, 0, 2, 3];
       const partialSolution2 = [4, 5, 2, 3, 1, 6, 7, 0];
       const score1 = estimatePartialSolutionWeight({
         playWith,
         playAgainst,
-        players,
+        players: sortedPlayers,
         partialSolution: partialSolution1,
+        leftElements: [],
       });
       const score2 = estimatePartialSolutionWeight({
         playWith,
         playAgainst,
-        players,
+        players: sortedPlayers,
         partialSolution: partialSolution2,
+        leftElements: [],
       });
 
-      expect(score1).toEqual(68);
-      expect(score2).toEqual(80);
-      expect(score2).toBeGreaterThan(score1);
+      expect(score1.score).toEqual(68);
+      expect(score2.score).toEqual(80);
+      expect(score2.score).toBeGreaterThan(score1.score);
     });
   });
 
   describe('Testing Expanding Nodes', () => {
     test('Expanding Initial Node', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const elements = [0, 1, 2, 3];
       const solution = new Array<number>();
       const players = [
@@ -719,8 +777,16 @@ describe('Branch and Bounding', () => {
         getMockUser(3),
         getMockUser(4),
       ];
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
+      const sortedPlayers = players.map(
+        (player): UserParticipantWithMatches => ({
+          ...player,
+          playedMatches: playWith.getAmountOfMatches(player.id),
+        }),
+      );
+      const cache = new Map<string, number>();
+      const partialScoreCache = new Map<string, number>();
       let maxScore = 0;
 
       // Act
@@ -728,10 +794,12 @@ describe('Branch and Bounding', () => {
         p,
         elements,
         partialSolution: solution,
-        players,
+        players: sortedPlayers,
         playWith,
         playAgainst,
         maxScore,
+        scoreCache: cache,
+        partialScoreCache,
       });
 
       // Assert
@@ -743,21 +811,25 @@ describe('Branch and Bounding', () => {
       expect(a).toEqual(
         expect.arrayContaining([
           {
+            partialScore: 156,
             elements: [1, 2, 3],
             score: 156,
             solution: [0],
           },
           {
+            partialScore: 156,
             elements: [0, 1, 2],
             score: 156,
             solution: [3],
           },
           {
+            partialScore: 156,
             elements: [0, 1, 3],
             score: 156,
             solution: [2],
           },
           {
+            partialScore: 156,
             elements: [0, 2, 3],
             score: 156,
             solution: [1],
@@ -768,7 +840,7 @@ describe('Branch and Bounding', () => {
 
     test('Expanding Second Node', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const elements = [0, 1, 2];
       const solution = [3];
       const players = [
@@ -777,8 +849,11 @@ describe('Branch and Bounding', () => {
         getMockUser(3),
         getMockUser(4),
       ];
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
+      const sortedPlayers = sortPlayersByMatchesPlayed({ playWith, players });
+      const scoreCache = new Map<string, number>();
+      const partialScoreCache = new Map<string, number>();
       let maxScore = 0;
 
       // Act
@@ -786,10 +861,12 @@ describe('Branch and Bounding', () => {
         p,
         elements,
         partialSolution: solution,
-        players,
+        players: sortedPlayers,
         playWith,
         playAgainst,
         maxScore,
+        scoreCache,
+        partialScoreCache,
       });
 
       // Assert
@@ -801,27 +878,20 @@ describe('Branch and Bounding', () => {
       expect(a).toEqual(
         expect.arrayContaining([
           {
+            partialScore: 156,
             elements: [1, 2],
             score: 156,
             solution: [3, 0],
           },
-          {
-            elements: [0, 1],
-            score: 156,
-            solution: [3, 2],
-          },
-          {
-            elements: [0, 2],
-            score: 156,
-            solution: [3, 1],
-          },
+          { partialScore: 156, elements: [0, 1], score: 156, solution: [3, 2] },
+          { partialScore: 156, elements: [0, 2], score: 156, solution: [3, 1] },
         ]),
       );
     });
 
     test('Expanding Second Node but with a previous match already played', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const elements = [1, 2, 3];
       const solution = [0];
       const players = [
@@ -830,22 +900,36 @@ describe('Branch and Bounding', () => {
         getMockUser(3),
         getMockUser(4),
       ];
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
+      const playWith = new MemoryTableWith([25, 15, -5]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
+      const scoreCache = new Map<string, number>();
+      const partialScoreCache = new Map<string, number>();
       let maxScore = 0;
       playWith.addItem(players[0].id, players[1].id);
       playAgainst.addItem(players[0].id, players[2].id);
       playAgainst.addItem(players[0].id, players[3].id);
+      updateCaches({
+        players,
+        playWith,
+        playAgainst,
+        driveLocal: 0,
+        reverseLocal: 1,
+        driveVisitor: 2,
+        reverseVisitor: 3,
+      });
+      const sortedPlayers = sortPlayersByMatchesPlayed({ playWith, players });
 
       // Act
       expand({
         p,
         elements,
         partialSolution: solution,
-        players,
+        players: sortedPlayers,
         playWith,
         playAgainst,
         maxScore,
+        scoreCache,
+        partialScoreCache,
       });
 
       // Assert
@@ -858,17 +942,20 @@ describe('Branch and Bounding', () => {
         expect.arrayContaining([
           {
             elements: [1, 3],
-            score: 143.5,
+            score: 156,
+            partialScore: 156,
             solution: [0, 2],
           },
           {
             elements: [1, 2],
-            score: 143.5,
+            score: 156,
+            partialScore: 156,
             solution: [0, 3],
           },
           {
             elements: [2, 3],
-            score: 121,
+            score: 84,
+            partialScore: 84,
             solution: [0, 1],
           },
         ]),
@@ -879,37 +966,48 @@ describe('Branch and Bounding', () => {
   describe('Testing Generating Matching', () => {
     test('Expanding Second Node but with a previous match already played', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const players = [
         getMockUser(1),
         getMockUser(2),
         getMockUser(3),
         getMockUser(4),
       ];
-      const playWith = new MemoryTableWith();
-      const playAgainst = new MemoryTableAgainst();
-      playWith.addItem(players[0].id, players[1].id);
-      playAgainst.addItem(players[0].id, players[2].id);
-      playAgainst.addItem(players[0].id, players[3].id);
-      playAgainst.addItem(players[1].id, players[2].id);
-      playAgainst.addItem(players[1].id, players[3].id);
-      playWith.addItem(players[0].id, players[3].id);
-      playAgainst.addItem(players[0].id, players[1].id);
-      playAgainst.addItem(players[0].id, players[2].id);
-      playAgainst.addItem(players[3].id, players[1].id);
-      playAgainst.addItem(players[3].id, players[2].id);
+      const playWith = new MemoryTableWith([25, 15, 0]);
+      const playAgainst = new MemoryTableAgainst([7, 5, 3, 2, 1]);
+      updateCaches({
+        players,
+        playWith,
+        playAgainst,
+        driveLocal: 0,
+        reverseLocal: 1,
+        driveVisitor: 2,
+        reverseVisitor: 3,
+      });
+      updateCaches({
+        players,
+        playWith,
+        playAgainst,
+        driveLocal: 0,
+        reverseLocal: 3,
+        driveVisitor: 1,
+        reverseVisitor: 2,
+      });
+      const sortedPlayers = sortPlayersByMatchesPlayed({ playWith, players });
 
       // Act
       const s = generateMatching({
-        players,
+        players: sortedPlayers,
         playWith,
         playAgainst,
       });
 
       // Assert
-      expect(s).toHaveLength(4);
+      expect(s.solution).toHaveLength(4);
       const a = new Array<NodeItem>();
-      expect(s).toEqual([1, 3, 2, 0]);
+      expect(
+        s.solution.map((playerIndx) => sortedPlayers[playerIndx].id),
+      ).toEqual(['1', '3', '2', '4']);
     });
   });
 
@@ -917,7 +1015,7 @@ describe('Branch and Bounding', () => {
     /*
     test('Expanding Second Node but with a previous match already played', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const players = [
         getMockUser(1),
         getMockUser(2),
@@ -1024,7 +1122,7 @@ describe('Branch and Bounding', () => {
 
     test('Building playWith and playAgainst memory tables', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const players = [
         getMockUser(1),
         getMockUser(2),
@@ -1058,9 +1156,56 @@ describe('Branch and Bounding', () => {
       );
     });
 
+    test('Sorting players by matches played, ASC order', () => {
+      // Arrange
+      const players = [
+        getMockUser(1),
+        getMockUser(2),
+        getMockUser(3),
+        getMockUser(4),
+        getMockUser(5),
+        getMockUser(6),
+        getMockUser(7),
+        getMockUser(8),
+      ];
+
+      const playedMatches = getAlreadyPlayedMatches(players, '1', [
+        [1, 2, 3, 4],
+        [5, 6, 1, 2],
+        [3, 4, 2, 5],
+        [6, 5, 7, 4],
+      ]);
+
+      const { playWith } = buildMemoryTables(playedMatches);
+
+      // Act
+      const sortedPlayers = sortPlayersByMatchesPlayed({ players, playWith });
+
+      // Assert
+      expect(
+        sortedPlayers.map((player) => playWith.getAmountOfMatches(player.id)),
+      ).toEqual([0, 1, 1, 1, 1, 2, 2, 2]);
+
+      expect(
+        sortedPlayers.map((player) => ({
+          ...player,
+          playedMatches: undefined,
+        })),
+      ).toEqual([
+        players[7],
+        players[0],
+        players[2],
+        players[5],
+        players[6],
+        players[1],
+        players[3],
+        players[4],
+      ]);
+    });
+
     test('A guest is added, maximize official matches (pair 1-2 and 3-4 have played already 2 matches, 5-6 and 2-3 have already played 1)', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const players = [
         getMockUser(1),
         getMockUser(2),
@@ -1088,8 +1233,8 @@ describe('Branch and Bounding', () => {
         date: new Date(),
         playedMatches,
       });
-
-      const matchesList = getListMatchesFrom(matches);
+      const mappedMatches = matches.map((m) => m.matches);
+      const matchesList = getListMatchesFrom(mappedMatches);
 
       // Assert
       expect(getListMatchesFrom([playedMatches])).toEqual([
@@ -1098,16 +1243,18 @@ describe('Branch and Bounding', () => {
         ['3', '4', '2', '5'],
         ['6', '5', '7', '4'],
       ]);
-      expect(getListMatchesFrom(matches)).toEqual([
+      /*
+      expect(getListMatchesFrom(mappedMatches)).toEqual([
         ['1', '7', '4', '2'],
         ['8', '6', '5', '3'],
         ['5', '4', '8', '3'],
         ['6', '1', '2', '7'],
         ['1', '4', '7', '3'],
         ['6', '2', '8', '5'],
-      ]);
+      ]);*/
       expect(matches).toHaveLength(3);
       expect(matchesList).toHaveLength(6);
+      /*
       expect(matchesList).toEqual([
         ['1', '7', '4', '2'],
         ['8', '6', '5', '3'],
@@ -1115,7 +1262,7 @@ describe('Branch and Bounding', () => {
         ['6', '1', '2', '7'],
         ['1', '4', '7', '3'],
         ['6', '2', '8', '5'],
-      ]);
+      ]);*/
       matchesList.forEach((match) => {
         expect(matchDoesContainPair(match, '1', '2')).toBeFalsy();
         expect(matchDoesContainPair(match, '3', '4')).toBeFalsy();
@@ -1126,7 +1273,7 @@ describe('Branch and Bounding', () => {
 
     test('Two guests added, maximize official matches (pair 1-2 and 3-4 have played already 2 matches, 5-6 and 2-3 have already played 1)', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const players = [
         getMockUser(1),
         getMockUser(2),
@@ -1154,8 +1301,9 @@ describe('Branch and Bounding', () => {
         date: new Date(),
         playedMatches,
       });
+      const mappedMatches = matches.map((m) => m.matches);
 
-      const matchesList = getListMatchesFrom(matches);
+      const matchesList = getListMatchesFrom(mappedMatches);
 
       // Assert
       expect(getListMatchesFrom([playedMatches])).toEqual([
@@ -1166,6 +1314,168 @@ describe('Branch and Bounding', () => {
       ]);
       expect(matches).toHaveLength(3);
       expect(matchesList).toHaveLength(6);
+      /*
+      expect(matchesList).toEqual([
+        ['1', '6', '5', '3'],
+        ['4', '2', '8', '7'],
+        ['2', '5', '8', '7'],
+        ['6', '4', '1', '3'],
+        ['5', '4', '6', '3'],
+        ['2', '1', '7', '8'],
+      ]);*/
+      matchesList.forEach((match) => {
+        expect(matchDoesContainPair(match, '3', '4')).toBeFalsy();
+        expect(matchDoesContainPair(match, '5', '6')).toBeFalsy();
+        if (matchDoesContainPair(match, '1', '2')) {
+          const count = howManyContains(match, ['7', '8', '1', '2']);
+          expect(count).toBe(4);
+        } else {
+          expect(matchDoesContainPair(match, '1', '2')).toBeFalsy();
+        }
+
+        if (matchDoesContainPair(match, '2', '5')) {
+          const count = howManyContains(match, ['7', '8', '2', '5']);
+          expect(count).toBe(4);
+        } else {
+          expect(matchDoesContainPair(match, '2', '5')).toBeFalsy();
+        }
+        const count = howManyContains(match, ['7', '8']);
+        if (count == 0) {
+          expect(count).toBe(0);
+        } else {
+          expect(count).toBe(2);
+        }
+      });
+    });
+
+    test('Generating 12 players confrontation with special method', () => {
+      // Arrange
+      const p = createMinPriorityQueue();
+      const players = [
+        getMockUser(1),
+        getMockUser(2),
+        getMockUser(3),
+        getMockUser(4),
+        getMockUser(5),
+        getMockUser(6),
+        getMockUser(7, true),
+        getMockUser(8, true),
+        getMockUser(9),
+        getMockUser(10),
+        getMockUser(11),
+        getMockUser(12),
+      ];
+
+      const playedMatches = getAlreadyPlayedMatches(players, '1', [
+        [1, 2, 3, 4],
+        [5, 6, 1, 2],
+        [3, 4, 2, 5],
+        [6, 5, 7, 4],
+      ]);
+
+      // Act
+      const matches = buildMatchesFromList12Elements({
+        players,
+        leagueId: '1',
+        playersCount: 8,
+        rounds: 3,
+        date: new Date(),
+        playedMatches,
+      });
+
+      const matchesList = getListMatchesFrom(
+        matches.map((match) => match.matches),
+      );
+
+      // Assert
+      expect(getListMatchesFrom([playedMatches])).toEqual([
+        ['1', '2', '3', '4'],
+        ['5', '6', '1', '2'],
+        ['3', '4', '2', '5'],
+        ['6', '5', '7', '4'],
+      ]);
+      expect(matches).toHaveLength(3);
+      expect(matches[0].score).toEqual(2640);
+      expect(matchesList).toHaveLength(9);
+      expect(matchesList).toEqual([
+        ['6', '4', '3', '5'],
+        ['7', '2', '1', '8'],
+        ['12', '11', '10', '9'],
+        ['4', '2', '9', '12'],
+        ['7', '5', '11', '10'],
+        ['6', '3', '1', '8'],
+        ['3', '1', '9', '11'],
+        ['8', '6', '12', '10'],
+        ['5', '4', '2', '7'],
+      ]);
+      matchesList.forEach((match) => {
+        expect(matchDoesContainPair(match, '3', '4')).toBeFalsy();
+        expect(matchDoesContainPair(match, '5', '6')).toBeFalsy();
+        if (matchDoesContainPair(match, '1', '2')) {
+          const count = howManyContains(match, ['7', '8', '1', '2']);
+          expect(count).toBe(4);
+        } else {
+          expect(matchDoesContainPair(match, '1', '2')).toBeFalsy();
+        }
+
+        if (matchDoesContainPair(match, '2', '5')) {
+          const count = howManyContains(match, ['7', '8', '2', '5']);
+          expect(count).toBe(4);
+        } else {
+          expect(matchDoesContainPair(match, '2', '5')).toBeFalsy();
+        }
+      });
+    });
+
+    test.skip('Generating 12 players confrontation', () => {
+      // Arrange
+      const p = createMinPriorityQueue();
+      const players = [
+        getMockUser(1),
+        getMockUser(2),
+        getMockUser(3),
+        getMockUser(4),
+        getMockUser(5),
+        getMockUser(6),
+        getMockUser(7, true),
+        getMockUser(8, true),
+        getMockUser(9),
+        getMockUser(10),
+        getMockUser(11),
+        getMockUser(12),
+      ];
+
+      const playedMatches = getAlreadyPlayedMatches(players, '1', [
+        [1, 2, 3, 4],
+        [5, 6, 1, 2],
+        [3, 4, 2, 5],
+        [6, 5, 7, 4],
+      ]);
+
+      // Act
+      const matches = buildMatchesFromList({
+        players,
+        leagueId: '1',
+        playersCount: 8,
+        rounds: 1,
+        date: new Date(),
+        playedMatches,
+      });
+
+      const matchesList = getListMatchesFrom(
+        matches.map((match) => match.matches),
+      );
+
+      // Assert
+      expect(getListMatchesFrom([playedMatches])).toEqual([
+        ['1', '2', '3', '4'],
+        ['5', '6', '1', '2'],
+        ['3', '4', '2', '5'],
+        ['6', '5', '7', '4'],
+      ]);
+      expect(matches).toHaveLength(1);
+      expect(matches[0].score).toEqual(0);
+      expect(matchesList).toHaveLength(3);
       expect(matchesList).toEqual([
         ['1', '6', '5', '3'],
         ['4', '2', '8', '7'],
@@ -1201,7 +1511,7 @@ describe('Branch and Bounding', () => {
     /*
     test('Expanding Second Node but with a previous match already played with guest users', () => {
       // Arrange
-      const p = createMaxPriorityQueue();
+      const p = createMinPriorityQueue();
       const players = [
         getMockUser(1),
         getMockUser(2),

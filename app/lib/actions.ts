@@ -15,7 +15,10 @@ import {
 import { Match } from './definitions';
 import { v4 } from 'uuid';
 import { UpdateScores } from './dao/lueague';
-import { buildMatchesFromList } from './branch-and-bounding';
+import {
+  buildMatchesFromList,
+  buildMatchesFromList12Elements,
+} from './branch-and-bounding';
 import { signIn } from '@/auth';
 
 const ResolveMatch = z.object({
@@ -143,15 +146,25 @@ export async function generateMatches(leagueId: string, formData: FormData) {
 
   const playedMatches = await fetchMatches(leagueId, true);
 
-  const matches = buildMatchesFromList({
-    players,
-    leagueId,
-    playersCount,
-    rounds,
-    date: new Date(matchDate),
-    playedMatches,
-  });
-  await createMatches(matches);
+  const matches =
+    players.length === 12
+      ? buildMatchesFromList12Elements({
+          players,
+          leagueId,
+          playersCount,
+          rounds,
+          date: new Date(matchDate),
+          playedMatches,
+        })
+      : buildMatchesFromList({
+          players,
+          leagueId,
+          playersCount,
+          rounds,
+          date: new Date(matchDate),
+          playedMatches,
+        });
+  await createMatches(matches.map((m) => m.matches));
 
   revalidatePath(`/dashboard/leagues/${leagueId}/matches/confirm`);
   redirect(`/dashboard/leagues/${leagueId}/matches/confirm`);

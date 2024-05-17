@@ -9,6 +9,7 @@ const getMockDbUser = (id: string): User => {
     email: `email${id}@lll.com`,
     name: `name${id}`,
     password: `password${id}`,
+    regularLoginActive: false,
   };
 };
 

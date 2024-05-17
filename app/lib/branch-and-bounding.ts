@@ -378,37 +378,38 @@ export const buildMatchesFromList12Elements = ({
   if (rounds > 3) {
     throw new Error('Max rounds is 3');
   }
-  const { playWith, playAgainst } = buildMemoryTables(playedMatches);
-  const sortedPlayers = [
-    ...sortPlayersByMatchesPlayed({ players, playWith }),
-  ].reverse();
+  const { playWith, playAgainst, sortedPlayers } = buildCachesAndPlayersList({
+    players,
+    playedMatches,
+  });
 
-  const initialSolution = buildInitialSolution(sortedPlayers);
+  console.log('sortedPlayers', sortedPlayers);
+
   const matches: { matches: Match[]; score: number }[] = [];
   const partitions: Map<number, number[][]> = new Map<number, number[][]>([
     [
       0,
       [
-        [0, 1, 2, 3, 4, 5, 6, 7],
-        [8, 9, 10, 11],
+        [4, 5, 6, 7, 8, 9, 10, 11],
+        [0, 1, 2, 3],
       ],
     ],
     [
       1,
       [
-        [2, 3, 4, 5, 6, 7, 8, 9],
-        [0, 1, 10, 11],
+        [3, 5, 6, 7, 8, 9, 10, 11],
+        [0, 1, 2, 4],
       ],
     ],
     [
       2,
       [
-        [0, 1, 4, 5, 6, 7, 8, 11],
-        [2, 3, 9, 10],
+        [2, 5, 6, 7, 8, 9, 10, 11],
+        [0, 1, 3, 4],
       ],
     ],
   ]);
-
+  let initialSolution = sortedPlayers.reverse();
   for (let iterRounds = 0; iterRounds < rounds; iterRounds++) {
     const round = new Array<Match>();
     const elements8 = partitions.get(iterRounds)?.[0] ?? [];
@@ -459,6 +460,10 @@ export const buildMatchesFromList12Elements = ({
     });
 
     matches.push({ matches: round, score: score4 + score8 });
+
+    initialSolution = [
+      ...sortPlayersByMatchesPlayed({ players, playWith }),
+    ].reverse();
   }
   return matches;
 };
@@ -511,6 +516,18 @@ const buildMatches = ({
   }
 };
 
+export const buildCachesAndPlayersList = ({
+  players,
+  playedMatches,
+}: {
+  players: UserParticipant[];
+  playedMatches: Match[];
+}) => {
+  const { playWith, playAgainst } = buildMemoryTables(playedMatches);
+  const sortedPlayers = sortPlayersByMatchesPlayed({ players, playWith });
+  return { playWith, playAgainst, sortedPlayers: [...sortedPlayers] };
+};
+
 export const buildMatchesFromList = ({
   players,
   leagueId,
@@ -525,10 +542,11 @@ export const buildMatchesFromList = ({
   date: Date;
   playedMatches: Match[];
 }): { matches: Match[]; score: number }[] => {
-  const { playWith, playAgainst } = buildMemoryTables(playedMatches);
-  const sortedPlayers = [
-    ...sortPlayersByMatchesPlayed({ players, playWith }),
-  ].reverse();
+  const { playWith, playAgainst, sortedPlayers } = buildCachesAndPlayersList({
+    players,
+    playedMatches,
+  });
+  sortedPlayers.reverse();
 
   const initialSolution = buildInitialSolution(sortedPlayers);
   const matches: { matches: Match[]; score: number }[] = [];
@@ -541,6 +559,7 @@ export const buildMatchesFromList = ({
     });
     const round = new Array<Match>();
     for (let j = 0; j < solution.length; j += 4) {
+      const sortedPlayers = sortPlayersByMatchesPlayed({ players, playWith });
       const driveLocal = solution[j];
       const reverseLocal = solution[j + 1];
       const driveVisitor = solution[j + 2];
@@ -708,6 +727,8 @@ export const sortPlayersByMatchesPlayed = ({
   return [...playersWithMatches].sort((a, b) => {
     if (b.guest) {
       return -1;
+    } else if (a.guest) {
+      return 1;
     }
     const aMatches = a.playedMatches;
     const bMatches = b.playedMatches;

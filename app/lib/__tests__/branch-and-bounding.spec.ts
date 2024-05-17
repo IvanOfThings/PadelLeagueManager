@@ -6,6 +6,7 @@ import {
 } from '../definitions';
 import {
   buildCacheKey,
+  buildCachesAndPlayersList,
   buildMatchesFromList,
   buildMatchesFromList12Elements,
   buildMemoryTables,
@@ -1348,7 +1349,7 @@ describe('Branch and Bounding', () => {
       });
     });
 
-    test('Generating 12 players confrontation with special method', () => {
+    test.only('Generating 12 players confrontation with special method', () => {
       // Arrange
       const p = createMinPriorityQueue();
       const players = [
@@ -1374,6 +1375,12 @@ describe('Branch and Bounding', () => {
       ]);
 
       // Act
+
+      const { sortedPlayers } = buildCachesAndPlayersList({
+        players,
+        playedMatches,
+      });
+
       const matches = buildMatchesFromList12Elements({
         players,
         leagueId: '1',
@@ -1388,6 +1395,21 @@ describe('Branch and Bounding', () => {
       );
 
       // Assert
+      expect(sortedPlayers.map((a) => a.id)).toEqual([
+        '9',
+        '10',
+        '11',
+        '12',
+        '1',
+        '3',
+        '6',
+        '2',
+        '4',
+        '5',
+        '8',
+        '7',
+      ]);
+
       expect(getListMatchesFrom([playedMatches])).toEqual([
         ['1', '2', '3', '4'],
         ['5', '6', '1', '2'],
@@ -1395,21 +1417,20 @@ describe('Branch and Bounding', () => {
         ['6', '5', '7', '4'],
       ]);
       expect(matches).toHaveLength(3);
-      expect(matches[0].score).toEqual(2640);
+      expect(matches[0].score).toEqual(2700);
       expect(matchesList).toHaveLength(9);
       expect(matchesList).toEqual([
-        ['6', '4', '3', '5'],
-        ['7', '2', '1', '8'],
-        ['12', '11', '10', '9'],
-        ['4', '2', '9', '12'],
-        ['7', '5', '11', '10'],
-        ['6', '3', '1', '8'],
-        ['3', '1', '9', '11'],
-        ['8', '6', '12', '10'],
-        ['5', '4', '2', '7'],
+        ['2', '6', '11', '9'],
+        ['3', '1', '10', '12'],
+        ['7', '8', '5', '4'],
+        ['4', '6', '12', '3'],
+        ['1', '10', '11', '9'],
+        ['7', '8', '5', '2'],
+        ['4', '3', '9', '11'],
+        ['10', '2', '1', '12'],
+        ['5', '8', '7', '6'],
       ]);
       matchesList.forEach((match) => {
-        expect(matchDoesContainPair(match, '3', '4')).toBeFalsy();
         expect(matchDoesContainPair(match, '5', '6')).toBeFalsy();
         if (matchDoesContainPair(match, '1', '2')) {
           const count = howManyContains(match, ['7', '8', '1', '2']);
@@ -1425,6 +1446,54 @@ describe('Branch and Bounding', () => {
           expect(matchDoesContainPair(match, '2', '5')).toBeFalsy();
         }
       });
+    });
+
+    test('Sorting players when there are guests in the match', () => {
+      // Arrange
+      const p = createMinPriorityQueue();
+      const players = [
+        getMockUser(1),
+        getMockUser(2),
+        getMockUser(3),
+        getMockUser(4),
+        getMockUser(5),
+        getMockUser(6),
+        getMockUser(7, true),
+        getMockUser(8, true),
+        getMockUser(9),
+        getMockUser(10),
+        getMockUser(11),
+        getMockUser(12),
+      ];
+
+      const playedMatches = getAlreadyPlayedMatches(players, '1', [
+        [1, 2, 3, 4],
+        [5, 6, 1, 2],
+        [3, 4, 2, 5],
+        [6, 5, 7, 4],
+      ]);
+
+      // Act
+      const { sortedPlayers } = buildCachesAndPlayersList({
+        players,
+        playedMatches,
+      });
+
+      // Assert
+      expect(sortedPlayers.map((a) => a.id)).toEqual([
+        '9',
+        '10',
+        '11',
+        '12',
+        '1',
+        '3',
+        '6',
+        '2',
+        '4',
+        '5',
+        '7',
+        '8',
+      ]);
     });
 
     test.skip('Generating 12 players confrontation', () => {

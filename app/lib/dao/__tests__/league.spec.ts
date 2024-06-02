@@ -166,8 +166,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId1',
       score: {
         playedMatches: 1,
+        playedOfficialMatches: 1,
         points: 1,
         winMatches: 1,
+        winOfficialMatches: 1,
       },
     });
 
@@ -180,8 +182,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId2',
       score: {
         playedMatches: 1,
+        playedOfficialMatches: 1,
         points: 1,
         winMatches: 1,
+        winOfficialMatches: 1,
       },
     });
 
@@ -194,8 +198,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId3',
       score: {
         playedMatches: 1,
+        playedOfficialMatches: 1,
         points: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
       },
     });
 
@@ -208,8 +214,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId4',
       score: {
         playedMatches: 1,
+        playedOfficialMatches: 1,
         points: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
       },
     });
   });
@@ -257,8 +265,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId1',
       score: {
         playedMatches: 2,
+        playedOfficialMatches: 2,
         points: 2,
         winMatches: 2,
+        winOfficialMatches: 2,
       },
     });
 
@@ -271,8 +281,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId2',
       score: {
         playedMatches: 2,
+        playedOfficialMatches: 2,
         points: 2,
         winMatches: 2,
+        winOfficialMatches: 2,
       },
     });
 
@@ -285,8 +297,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId3',
       score: {
         playedMatches: 2,
+        playedOfficialMatches: 2,
         points: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
       },
     });
 
@@ -299,8 +313,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId4',
       score: {
         playedMatches: 2,
+        playedOfficialMatches: 2,
         points: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
       },
     });
   });
@@ -356,6 +372,8 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId1',
       score: {
         playedMatches: 3,
+        playedOfficialMatches: 3,
+        winOfficialMatches: 3,
         points: 2,
         winMatches: 3,
       },
@@ -370,8 +388,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId2',
       score: {
         playedMatches: 3,
+        playedOfficialMatches: 3,
         points: 2,
         winMatches: 3,
+        winOfficialMatches: 3,
       },
     });
 
@@ -384,8 +404,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId3',
       score: {
         playedMatches: 3,
+        playedOfficialMatches: 3,
         points: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
       },
     });
 
@@ -398,8 +420,10 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId4',
       score: {
         playedMatches: 3,
+        playedOfficialMatches: 3,
         points: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
       },
     });
   });
@@ -447,9 +471,11 @@ describe('Testing league dao functions', () => {
         },
         leagueId: 'leagueId1',
         score: {
-          playedMatches: 1,
+          playedMatches: 2,
+          playedOfficialMatches: 1,
           points: 1,
-          winMatches: 1,
+          winMatches: 2,
+          winOfficialMatches: 1,
         },
       }),
     );
@@ -497,9 +523,11 @@ describe('Testing league dao functions', () => {
         },
         leagueId: 'leagueId1',
         score: {
-          playedMatches: 1,
+          playedMatches: 2,
+          playedOfficialMatches: 1,
           points: 0,
-          winMatches: 0,
+          winMatches: 1,
+          winOfficialMatches: 0,
         },
       }),
     );

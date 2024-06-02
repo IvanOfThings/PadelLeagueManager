@@ -5,7 +5,7 @@ import {
   ExclamationCircleIcon,
 } from '@heroicons/react/20/solid';
 import { Button } from './button';
-import { authenticateWithGoogle } from '../lib/actions';
+import { authenticateWithGoogle } from '../lib/actions/actions';
 import { useFormState, useFormStatus } from 'react-dom';
 
 export default function SocialLogin() {

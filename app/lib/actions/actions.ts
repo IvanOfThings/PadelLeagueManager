@@ -4,55 +4,61 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { AuthError } from 'next-auth';
-import { fetchUsersParticipants } from './data';
+import { fetchUsersParticipants } from '../data';
 import {
   ConfirmMatch,
   DeleteMatch,
   addResults,
   createMatches,
   fetchMatches,
-} from './dao/matches';
-import { Match } from './definitions';
+} from '../dao/matches';
+import { Match } from '../definitions';
 import { v4 } from 'uuid';
-import { UpdateScores } from './dao/lueague';
+import { UpdateScores } from '../dao/lueague';
 import {
   buildMatchesFromList,
   buildMatchesFromList12Elements,
-} from './branch-and-bounding';
+} from '../branch-and-bounding';
 import { signIn } from '@/auth';
 
 const ResolveMatch = z.object({
   set1Local: z
     .string()
-    .transform((val) => parseInt(val, 10))
+    .transform((val) => parseInt(val === '' ? '0' : val, 10))
     .refine((val) => val >= 0),
   set1Visitor: z
     .string()
-    .transform((val) => parseInt(val, 10))
+    .transform((val) => parseInt(val === '' ? '0' : val, 10))
     .refine((val) => val >= 0),
+  action: z.enum(['confirm', 'discard']),
 });
 
 export const resolveMatch = async (match: Match, formData: FormData) => {
   try {
-    const { set1Local, set1Visitor } = ResolveMatch.parse({
+    const { set1Local, set1Visitor, action } = ResolveMatch.parse({
       set1Local: formData.get('set1Local'),
       set1Visitor: formData.get('set1Visitor'),
+      action: formData.get('action'),
     });
 
-    await addResults(match, [
-      {
-        id: v4(),
-        matchId: match.id,
-        visitorScore: set1Visitor,
-        localScore: set1Local,
-        setNumber: 1,
-        localWins: set1Local > set1Visitor,
-        localTieBreak: 0,
-        visitorTieBreak: 0,
-      },
-    ]);
+    if (action === 'discard') {
+      await DeleteMatch({ matchId: match.id });
+    } else {
+      await addResults(match, [
+        {
+          id: v4(),
+          matchId: match.id,
+          visitorScore: set1Visitor,
+          localScore: set1Local,
+          setNumber: 1,
+          localWins: set1Local > set1Visitor,
+          localTieBreak: 0,
+          visitorTieBreak: 0,
+        },
+      ]);
 
-    await UpdateScores(match.leagueId);
+      await UpdateScores(match.leagueId);
+    }
   } catch (e) {
     console.log('error', e);
     return { message: `${e}` };

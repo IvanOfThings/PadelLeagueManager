@@ -31,7 +31,9 @@ model Participates {
 
   @@id([participantId, leagueId])
   playedMatches Int @default(0)
+  playedOfficialMatches Int @default(0)
   winMatches Int @default(0)
+  winOfficialMatches Int @default(0)
   points Int @default(0)
   guest Boolean @default(false)
 }

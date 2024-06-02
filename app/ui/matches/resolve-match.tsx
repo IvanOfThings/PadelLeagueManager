@@ -3,10 +3,11 @@ import { Match, User } from '@/app/lib/definitions';
 
 import { ArrowDownTrayIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
-import { resolveMatch } from '@/app/lib/actions';
+import { resolveMatch } from '@/app/lib/actions/actions';
 import TableTitle from '../table-title';
 import Link from 'next/link';
 
+// TODO: Add a modal to confirm when deleting a match
 export default function ResolveMatch({
   match,
   leagueId,
@@ -56,7 +57,7 @@ function ResultsForm({ leagueId, match }: { leagueId: string; match: Match }) {
             name="set1Local"
             type="number"
             step="1"
-            min="1"
+            min="0"
             max="9"
             placeholder="Juegos ganados local"
             className="   w-full rounded-md border border-gray-200 text-sm outline-2 placeholder:text-gray-500"
@@ -68,7 +69,7 @@ function ResultsForm({ leagueId, match }: { leagueId: string; match: Match }) {
             name="set1Visitor"
             type="number"
             step="1"
-            min="1"
+            min="0"
             max="9"
             placeholder="Juegos ganados visitante"
             className="   w-full rounded-md border border-gray-200 text-sm outline-2 placeholder:text-gray-500"
@@ -77,7 +78,10 @@ function ResultsForm({ leagueId, match }: { leagueId: string; match: Match }) {
       </div>
 
       <div className="mb-4  grid grid-cols-4 gap-4">
-        <span className="col-span-2 "></span>
+        <span className="col-span-1 "></span>
+        <Button name="action" value="discard" type="submit" color="red">
+          Descartar
+        </Button>
         <Link
           href={`/dashboard/leagues/${leagueId}`}
           className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
@@ -85,7 +89,7 @@ function ResultsForm({ leagueId, match }: { leagueId: string; match: Match }) {
           {' '}
           Cancelar{' '}
         </Link>
-        <Button type="submit" color="blue">
+        <Button name="action" type="submit" value="confirm" color="blue">
           Confirmar
         </Button>
       </div>

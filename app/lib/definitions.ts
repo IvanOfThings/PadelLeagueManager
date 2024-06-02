@@ -108,6 +108,8 @@ export type Score = {
   playedMatches: number;
   winMatches: number;
   points: number;
+  winOfficialMatches: number;
+  playedOfficialMatches: number;
 };
 
 export type Set = {

@@ -13,7 +13,7 @@
     "seed:deno": "/Users/ivan.perea/.deno/bin/deno run ./scripts/load-test-data.ts",
     "seed:node": "npx tsx ./scripts/load-test-data.ts",
     "seed:node:milan": "npx tsx ./scripts/load-data-from-milan-league.ts",
-    "seed:node:test": "npx tsx ./scripts/load-data-from-liga-test.ts",
+    "seed:node:test": "npx tsx ./scripts/load-data-from-liga-test.test.ts",
     "seed:node:update": "npx tsx ./scripts/update-data-from-milan-league.ts",
     "start": "next start",
     "test": "vitest"

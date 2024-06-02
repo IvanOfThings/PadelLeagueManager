@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  UserGroupIcon,
-  HomeIcon,
-  DocumentDuplicateIcon,
-} from '@heroicons/react/24/outline';
+import { HomeIcon, UserGroupIcon, StarIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
@@ -15,12 +11,25 @@ const links = [
   { name: 'Home', href: '/dashboard', icon: HomeIcon },
   /*{ name: 'Customers', href: '/dashboard/customers', icon: UserGroupIcon },*/
 ];
-export default function NavLinks({ leagueId }: { leagueId?: string }) {
+const leagueLinks = (leagueId: string) => [
+  {
+    name: 'Dashboard',
+    href: `/dashboard/leagues/${leagueId}`,
+    icon: StarIcon,
+  },
+  {
+    name: 'Players',
+    href: `/dashboard/leagues/${leagueId}/players`,
+    icon: UserGroupIcon,
+  },
+  /*{ name: 'Customers', href: '/dashboard/customers', icon: UserGroupIcon },*/
+];
+export default function NavLinks({ leagueId }: { leagueId: string }) {
   const pathname = usePathname();
 
   return (
     <>
-      {links.map((link) => {
+      {[...links, ...leagueLinks(leagueId)].map((link) => {
         const LinkIcon = link.icon;
         return (
           <Link

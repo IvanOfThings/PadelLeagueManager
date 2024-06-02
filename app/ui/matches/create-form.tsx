@@ -3,7 +3,7 @@ import { User } from '@/app/lib/definitions';
 import Link from 'next/link';
 import { ArrowDownTrayIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
-import { generateMatches } from '@/app/lib/actions';
+import { generateMatches } from '@/app/lib/actions/actions';
 import { SetStateAction, useState } from 'react';
 
 import { TuiDatePicker } from 'nextjs-tui-date-picker';

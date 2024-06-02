@@ -2,6 +2,7 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import { fetchLeaguesByUser } from '@/app/lib/data';
 import Link from 'next/link';
+
 export default async function MyLeagues() {
   const myLeagues = await fetchLeaguesByUser();
   return (

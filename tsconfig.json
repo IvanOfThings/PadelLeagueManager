@@ -33,7 +33,8 @@
     ".next/types/**/*.ts",
     "app/scripts/placeholder-data.js",
     "app/scripts/seed.js",
-    "app/scripts/*"
+    "app/scripts/*",
+    "app/dashboard/layout.tsx_"
   ],
   "exclude": ["node_modules"]
 }

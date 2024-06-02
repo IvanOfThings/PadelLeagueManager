@@ -16,7 +16,9 @@ const getParticipantsMock = (
     leagueId: 'league1',
     score: {
       playedMatches: playedMatches,
+      playedOfficialMatches: playedMatches,
       winMatches: winMatches,
+      winOfficialMatches: winMatches,
       points: winMatches,
     },
   };

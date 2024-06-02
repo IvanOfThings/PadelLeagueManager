@@ -106,6 +106,7 @@ export const shuffle = <T>(array: T[]): T[] => {
 
 export function sortParticipants(
   participants: Array<LeagueParticipant>,
+  sortOfficial = true,
 ): LeagueParticipant[] {
   const sortedParticipants = Object.values(participants).sort(
     (a: LeagueParticipant, b: LeagueParticipant) => {
@@ -114,15 +115,28 @@ export function sortParticipants(
       } else if (a.score.points < b.score.points) {
         return 1;
       }
-      if (
-        a.score.playedMatches < b.score.playedMatches &&
-        a.score.playedMatches > 0 &&
-        b.score.playedMatches > 0
-      ) {
-        return -1;
-      }
-      if (b.score.playedMatches <= 0) {
-        return -1;
+      if (sortOfficial) {
+        if (
+          a.score.playedOfficialMatches > b.score.playedOfficialMatches &&
+          a.score.playedOfficialMatches > 0 &&
+          b.score.playedOfficialMatches > 0
+        ) {
+          return -1;
+        }
+        if (b.score.playedOfficialMatches <= 0) {
+          return -1;
+        }
+      } else {
+        if (
+          a.score.playedMatches < b.score.playedMatches &&
+          a.score.playedMatches > 0 &&
+          b.score.playedMatches > 0
+        ) {
+          return -1;
+        }
+        if (b.score.playedMatches <= 0) {
+          return -1;
+        }
       }
       return 1;
     },

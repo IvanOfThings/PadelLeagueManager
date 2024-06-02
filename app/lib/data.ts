@@ -68,7 +68,6 @@ export async function fetchLeaguesByUser(): Promise<League[]> {
     }
     console.log('Retrieving user');
     const user = await getUser(userMail);
-    console.log('User :', JSON.stringify(user));
     if (!user) {
       throw new Error('Failed to fetch Leagues for the user.');
     }
@@ -284,7 +283,10 @@ export async function fetchLeagueRaking(
   const league = await fetchLeagueById(leagueId);
   const participants = await fetchLeagueParticipants(leagueId, true);
 
-  const sortedParticipants = sortParticipants(Object.values(participants));
+  const sortedParticipants = sortParticipants(
+    Object.values(participants),
+    true,
+  );
   return { league, sortedParticipants };
 }
 
@@ -295,7 +297,10 @@ export async function fetchLeagueAndParticipants(
   const league = await fetchLeagueById(leagueId);
   const participants = await fetchLeagueParticipants(leagueId);
 
-  const sortedParticipants = sortParticipants(Object.values(participants));
+  const sortedParticipants = sortParticipants(
+    Object.values(participants),
+    false,
+  );
   return { league, sortedParticipants };
 }
 

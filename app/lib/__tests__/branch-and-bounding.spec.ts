@@ -27,8 +27,6 @@ import { NodeItem, createMinPriorityQueue } from '../maxPriorityQueue';
 import { MemoryTableWith } from '../memoryTableWith';
 import { MemoryTableAgainst } from '../memoryTableAgainst';
 import { MemoryTable } from '../memoryTable';
-import exp from 'constants';
-import { match } from 'assert';
 
 const getMockUser = (id: number, guest = false): UserParticipant => {
   return {

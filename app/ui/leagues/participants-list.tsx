@@ -1,13 +1,12 @@
 'use client';
 
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { UserSelect } from '../components/user-selector';
 import { Button } from '../button';
 import { User } from '@/app/lib/definitions';
 import { addParticipants } from '@/app/lib/actions/participants/actions';
 import React from 'react';
-import { boolean } from 'zod';
 import clsx from 'clsx';
+import { AddingNewUser } from '../components/user-selector-guest';
 
 export function AddParticipantsForm({
   leagueId,
@@ -20,10 +19,15 @@ export function AddParticipantsForm({
     ...noParticipants,
   ]);
   const [participantsToAdd, setParticipantsToAdd] = React.useState(
-    new Array<User>(),
+    new Array<{ user: User; guest: boolean }>(),
   );
-  const [newParticipant, setNewParticipant] = React.useState<User | null>(
-    noParticipantsSt.length > 0 ? noParticipantsSt[0] : null,
+  const [newParticipant, setNewParticipant] = React.useState<{
+    user: User;
+    guest: boolean;
+  } | null>(
+    noParticipantsSt.length > 0
+      ? { user: noParticipantsSt[0], guest: false }
+      : null,
   );
   const resolveMatchWithMatch = addParticipants.bind(
     null,
@@ -37,20 +41,24 @@ export function AddParticipantsForm({
   const clear = (): void => {
     setNoParticipantsSt([...noParticipants]);
     setParticipantsToAdd([]);
-    setNewParticipant(noParticipants.length > 0 ? noParticipants[0] : null);
+    setNewParticipant(
+      noParticipants.length > 0
+        ? { user: noParticipants[0], guest: false }
+        : null,
+    );
     setActive(noParticipants.length > 0);
   };
 
   const handleAddUser = (): void => {
     const part =
       newParticipant === null && noParticipantsSt.length > 0
-        ? noParticipantsSt[0]
+        ? { user: noParticipantsSt[0], guest: false }
         : newParticipant;
     if (part !== null) {
       setParticipantsToAdd([...participantsToAdd, part]);
 
       const newNoParticipants = noParticipantsSt.filter(
-        (user) => user.id !== part.id,
+        (user) => user.id !== part.user.id,
       );
       setNoParticipantsSt(newNoParticipants);
       setActive(newNoParticipants.length > 0);
@@ -63,15 +71,28 @@ export function AddParticipantsForm({
         <h2>Añadir Participantes</h2>
       </div>
 
-      <span className=" col-span-1 inline-block px-5 py-1  "></span>
-      <span className="col-span-3 inline-block pe-5">
-        <UserSelect
+      <span className="col-span-4 inline-block pe-5">
+        <AddingNewUser
           label="Jugador"
           users={noParticipantsSt}
-          userId={newParticipant !== null ? newParticipant.id : ''}
+          userId={newParticipant !== null ? newParticipant.user.id : ''}
+          guest={newParticipant?.guest ?? false}
           inputName={`hole`}
-          onChange={(participant: User) => {
-            setNewParticipant(participant);
+          onChangeUser={(participant: User) => {
+            setNewParticipant({
+              user: participant,
+              guest: newParticipant?.guest ?? false,
+            });
+          }}
+          onChangeGuest={(guest: boolean) => {
+            if (newParticipant || noParticipantsSt.length > 0) {
+              setNewParticipant({
+                user: newParticipant
+                  ? newParticipant.user
+                  : noParticipantsSt[0],
+                guest: guest,
+              });
+            }
           }}
         />
       </span>
@@ -94,7 +115,7 @@ export function AddParticipantsForm({
         <ParticipantsList users={participantsToAdd} />
       </div>
       <div className="col-span-5 mb-4  gap-4">
-        <form action={resolveMatchWithMatch}>
+        <form action={resolveMatchWithMatch} onSubmit={(event) => clear()}>
           <div className="mb-4  grid grid-cols-4 gap-4">
             <span className="col-span-1 "></span>
             <Button
@@ -119,15 +140,19 @@ export function AddParticipantsForm({
   );
 }
 
-const ParticipantsList = ({ users }: { users: User[] }) => {
+const ParticipantsList = ({
+  users,
+}: {
+  users: { user: User; guest: boolean }[];
+}) => {
   return users.map((user, i) => (
-    <div className="mb-4  grid grid-cols-5 gap-4" key={`${user.id}`}>
-      <span className=" inline-block px-5 py-1  "></span>
-      <span className="col-span-3 inline-block pe-5">
-        <UserSelect
+    <div className="mb-4  grid grid-cols-5 gap-4" key={`${user.user.id}`}>
+      <span className="col-span-4 inline-block pe-5">
+        <AddingNewUser
           label={`Jugador ${i}`}
-          users={users}
-          userId={user.id}
+          users={users.map((user) => user.user)}
+          userId={user.user.id}
+          guest={user.guest}
           inputName={`hole`}
         />
       </span>

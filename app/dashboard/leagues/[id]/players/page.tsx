@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 
 import { LatestInvoicesSkeleton } from '@/app/ui/skeletons';
 import { fetchLeagueAndParticipants } from '@/app/lib/data';
-import { fetchMatches } from '@/app/lib/dao/matches';
 import { auth } from '@/auth';
 import Participants from '@/app/ui/leagues/participants';
 

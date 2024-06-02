@@ -15,13 +15,19 @@ export default function CreateMatchesForm({
   users: User[];
   leagueId: string;
 }) {
-  const [playersIds, setPlayersIds] = useState(
-    new Array<string>(12).fill('').map((_, index) => ''),
-  );
+  const [playersIds, setPlayersIds] = useState<string[]>([]);
+
+  const [availableUsers, setAvailableUsers] = useState(users);
 
   const handlePlayersChange = (index: number, value: string) => {
-    const p = playersIds.map((id, idx) => (idx !== index ? id : value));
+    const p = [
+      ...playersIds.slice(0, index),
+      value,
+      ...playersIds.slice(index + 1),
+    ];
     setPlayersIds(p);
+    const available = users.filter((user) => !p.includes(user.id));
+    setAvailableUsers(available);
   };
 
   const [selectedDate, setSelectedDay] = useState(new Date());
@@ -61,19 +67,29 @@ export default function CreateMatchesForm({
         </div>
         {Array(selectedOptionNumber)
           .fill(0)
-          .map((_, index) => (
-            <div key={`user-${index}`} className="mb-4 ">
-              <UserSelect
-                users={users}
-                index={index}
-                handler={handlePlayersChange}
-              />
-            </div>
-          ))}
+          .map((_, index) => {
+            const userToAssign =
+              playersIds.length > 0 && playersIds.length > index
+                ? users.find((u) => u.id === playersIds[index])
+                : undefined;
+            return (
+              <div key={`user-${index}`} className="mb-4 ">
+                <UserSelect
+                  users={
+                    userToAssign
+                      ? [userToAssign, ...availableUsers]
+                      : availableUsers
+                  }
+                  index={index}
+                  handler={handlePlayersChange}
+                  userAssigned={userToAssign}
+                />
+              </div>
+            );
+          })}
 
         <TuiDatePicker
           handleChange={(e: any) => {
-            console.log(e);
             setSelectedDay(new Date(e));
           }}
           date={selectedDate}
@@ -123,10 +139,12 @@ function UserSelect({
   users,
   index,
   handler,
+  userAssigned,
 }: {
   users: User[];
   index: number;
   handler: (index: number, value: string) => void;
+  userAssigned?: User;
 }) {
   const id = `customerId-${index}`;
 
@@ -144,6 +162,11 @@ function UserSelect({
         <option value="" disabled>
           Seleccione un jugador
         </option>
+        {userAssigned !== undefined ? (
+          <option
+            value={`${userAssigned.id}`}
+          >{`${userAssigned?.name}`}</option>
+        ) : null}
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {user.name}

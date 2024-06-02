@@ -18,7 +18,9 @@ const getMockDbParticipates = (id: string, guest = false): Participates => {
     participantId: `${id}`,
     leagueId: `leagueId${id}`,
     playedMatches: 0,
+    playedOfficialMatches: 0,
     winMatches: 0,
+    winOfficialMatches: 0,
     points: 0,
     guest,
   };
@@ -120,7 +122,9 @@ describe('Testing league dao functions', () => {
       leagueId: 'leagueId1',
       score: {
         playedMatches: 0,
+        playedOfficialMatches: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
         points: 0,
       },
       user: {

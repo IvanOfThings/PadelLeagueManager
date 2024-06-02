@@ -1,3 +1,4 @@
+import { Team } from '@prisma/client';
 import { LeagueParticipant, Revenue } from './definitions';
 
 export const formatCurrency = (amount: number) => {
@@ -128,3 +129,8 @@ export function sortParticipants(
   );
   return sortedParticipants;
 }
+
+export const getTeamChecksum = (team: Team): string => {
+  const participants = [team.reversId, team.driveId].sort();
+  return participants.join('-');
+};

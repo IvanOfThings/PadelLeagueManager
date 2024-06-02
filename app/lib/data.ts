@@ -62,10 +62,13 @@ export async function fetchLeaguesByUser(): Promise<League[]> {
   try {
     const session = await auth();
     const userMail = session?.user?.email;
+    console.log('User Mail:', userMail);
     if (!userMail) {
       throw new Error('Failed to fetch Leagues for the user.');
     }
+    console.log('Retrieving user');
     const user = await getUser(userMail);
+    console.log('User :', JSON.stringify(user));
     if (!user) {
       throw new Error('Failed to fetch Leagues for the user.');
     }
@@ -274,6 +277,17 @@ export async function fetchParticipants(leagueId: string) {
   return fetchLeagueParticipants(leagueId);
 }
 
+export async function fetchLeagueRaking(
+  leagueId: string,
+): Promise<{ league: League; sortedParticipants: LeagueParticipant[] }> {
+  noStore();
+  const league = await fetchLeagueById(leagueId);
+  const participants = await fetchLeagueParticipants(leagueId, true);
+
+  const sortedParticipants = sortParticipants(Object.values(participants));
+  return { league, sortedParticipants };
+}
+
 export async function fetchLeagueAndParticipants(
   leagueId: string,
 ): Promise<{ league: League; sortedParticipants: LeagueParticipant[] }> {
@@ -347,6 +361,24 @@ export async function fetchUsers(userIds: string[]): Promise<User[]> {
     throw new Error('Failed to fetch users');
   }
   return players.map((player) => {
+    return { id: player.id, name: player.name, email: player.email };
+  });
+}
+
+export async function fetchUsersNotInLeague(leagueId: string): Promise<User[]> {
+  noStore();
+  const players = await prisma.user.findMany({});
+
+  const participants = await prisma.participates.findMany({
+    where: {
+      leagueId: leagueId,
+    },
+  });
+  const participantsIds = participants.map((p) => p.participantId);
+  const nonParticipants = players.filter(
+    (player) => !participantsIds.includes(player.id),
+  );
+  return nonParticipants.map((player) => {
     return { id: player.id, name: player.name, email: player.email };
   });
 }

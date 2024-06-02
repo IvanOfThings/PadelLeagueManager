@@ -3,6 +3,7 @@ import { LeagueParticipant } from '../definitions';
 import prisma from '../prisma';
 import { fetchTeamsFromMatches } from './teams';
 import { unstable_noStore as noStore } from 'next/cache';
+import { getTeamChecksum } from '../utils';
 
 export async function UpdateScores(leagueId: string): Promise<void> {
   noStore();
@@ -27,15 +28,22 @@ export async function UpdateScores(leagueId: string): Promise<void> {
 
     await Promise.all(
       Object.values(updatedParticipants).map((p) => {
-        return prisma.participates.update({
-          data: { ...p.score },
-          where: {
-            participantId_leagueId: {
-              participantId: p.user.id,
-              leagueId: p.leagueId,
+        try {
+          const prm = prisma.participates.update({
+            data: { ...p.score },
+            where: {
+              participantId_leagueId: {
+                participantId: p.user.id,
+                leagueId: p.leagueId,
+              },
             },
-          },
-        });
+          });
+          return prm;
+        } catch (e) {
+          console.log('Error updating participant score');
+          console.log('Participant: ', JSON.stringify(p));
+          console.log(e);
+        }
       }),
     );
   } catch (error) {
@@ -52,7 +60,9 @@ export function mapParticipants({
     participantId: string;
     leagueId: string;
     playedMatches: number;
+    playedOfficialMatches: number;
     winMatches: number;
+    winOfficialMatches: number;
     points: number;
     guest: boolean;
   }[];
@@ -78,6 +88,8 @@ export function mapParticipants({
             playedMatches: curr.playedMatches,
             winMatches: curr.winMatches,
             points: curr.points,
+            playedOfficialMatches: curr.playedOfficialMatches,
+            winOfficialMatches: curr.winOfficialMatches,
           },
         };
       }
@@ -89,10 +101,11 @@ export function mapParticipants({
 }
 export async function fetchLeagueParticipants(
   leagueId: string,
+  onlyOfficial = false,
 ): Promise<Record<string, LeagueParticipant>> {
   noStore();
   const participants = await prisma.participates.findMany({
-    where: { leagueId },
+    where: onlyOfficial ? { leagueId, guest: false } : { leagueId },
   });
   const users = await prisma.user.findMany({
     where: { id: { in: participants.map((p) => p.participantId) } },
@@ -114,47 +127,105 @@ export const updateParticipantScore = (
       ...participant,
       score: {
         playedMatches: 0,
+        playedOfficialMatches: 0,
         winMatches: 0,
+        winOfficialMatches: 0,
         points: 0,
       },
     };
   });
 
   const teamsMap = new Map<string, number>();
-  // TODO: This constant should be configurable
-  const K_MAX_MATCHES = 2;
   matches.forEach((match) => {
-    if (match.official) {
-      const winnerTeamId = match.localWins ? match.localId : match.visitorId;
-      const looserTeamId = match.localWins ? match.visitorId : match.localId;
-      if (winnerTeamId === undefined || looserTeamId === undefined) {
-        throw new Error('Winner or looser team id is undefined');
-      }
-      const winnerTeam = teams.find((team) => team.id === winnerTeamId);
-      const looserTeam = teams.find((team) => team.id === looserTeamId);
-      if (winnerTeam && looserTeam) {
-        teamsMap.set(winnerTeamId, (teamsMap.get(winnerTeamId) ?? 0) + 1);
-        teamsMap.set(looserTeamId, (teamsMap.get(looserTeamId) ?? 0) + 1);
-        // Winner team only scores if have played less than K_MAX_MATCHES as a team
-        if ((teamsMap.get(winnerTeamId) ?? 0) <= K_MAX_MATCHES) {
-          updatedParticipants[winnerTeam.driveId].score.points += 1;
-          updatedParticipants[winnerTeam.reversId].score.points += 1;
+    const winnerTeamId = match.localWins ? match.localId : match.visitorId;
+    const looserTeamId = match.localWins ? match.visitorId : match.localId;
+    if (winnerTeamId === undefined || looserTeamId === undefined) {
+      throw new Error('Winner or looser team id is undefined');
+    }
+    const winnerTeam = teams.find((team) => team.id === winnerTeamId);
+    const looserTeam = teams.find((team) => team.id === looserTeamId);
+    if (winnerTeam && looserTeam) {
+      const winnerChecksum = getTeamChecksum(winnerTeam);
+      const looserChecksum = getTeamChecksum(looserTeam);
+      teamsMap.set(winnerChecksum, (teamsMap.get(winnerChecksum) ?? 0) + 1);
+      teamsMap.set(looserChecksum, (teamsMap.get(looserChecksum) ?? 0) + 1);
+      try {
+        if (match.official) {
+          updateOfficialScore(
+            updatedParticipants,
+            winnerTeam,
+            looserTeam,
+            teamsMap.get(winnerChecksum) ?? 0,
+          );
         }
         updatedParticipants[winnerTeam.driveId].score.winMatches += 1;
         updatedParticipants[winnerTeam.reversId].score.winMatches += 1;
         updatedParticipants[winnerTeam.driveId].score.playedMatches += 1;
         updatedParticipants[winnerTeam.reversId].score.playedMatches += 1;
 
-        updatedParticipants[looserTeam.driveId].score.points += 0;
-        updatedParticipants[looserTeam.reversId].score.points += 0;
         updatedParticipants[looserTeam.driveId].score.winMatches += 0;
         updatedParticipants[looserTeam.reversId].score.winMatches += 0;
         updatedParticipants[looserTeam.driveId].score.playedMatches += 1;
         updatedParticipants[looserTeam.reversId].score.playedMatches += 1;
-      } else {
-        throw new Error('Something went wrong while calculating score.');
+      } catch (e) {
+        console.log('Error updating participant score');
+        console.log('Match: ', JSON.stringify(match));
+        console.log('Winner Team: ', JSON.stringify(winnerTeam));
+        console.log(
+          'Winner Team reverse: ',
+          JSON.stringify(updatedParticipants[winnerTeam.driveId]),
+        );
+        console.log(
+          'Looser Team reverse: ',
+          JSON.stringify(updatedParticipants[winnerTeam.driveId]),
+        );
+        console.log('Looser Team: ', JSON.stringify(looserTeam));
+        console.log(
+          'Winner Team reverse: ',
+          JSON.stringify(updatedParticipants[looserTeam.driveId]),
+        );
+        console.log(
+          'Looser Team reverse: ',
+          JSON.stringify(updatedParticipants[looserTeam.driveId]),
+        );
       }
+    } else {
+      throw new Error('Something went wrong while calculating score.');
     }
   });
   return updatedParticipants;
+};
+
+const updateOfficialScore = (
+  updatedParticipants: Record<string, LeagueParticipant>,
+  winnerTeam: {
+    id: string;
+    driveId: string;
+    reversId: string;
+  },
+  looserTeam: {
+    id: string;
+    driveId: string;
+    reversId: string;
+  },
+  playedMatchesByTeam: number,
+): void => {
+  // TODO: This constant should be configurable
+  const K_MAX_MATCHES = 2;
+  // Winner team only scores if have played less than K_MAX_MATCHES as a team
+  if (playedMatchesByTeam <= K_MAX_MATCHES) {
+    updatedParticipants[winnerTeam.driveId].score.points += 1;
+    updatedParticipants[winnerTeam.reversId].score.points += 1;
+  }
+  updatedParticipants[looserTeam.driveId].score.points += 0;
+  updatedParticipants[looserTeam.reversId].score.points += 0;
+  updatedParticipants[winnerTeam.driveId].score.winOfficialMatches += 1;
+  updatedParticipants[winnerTeam.reversId].score.winOfficialMatches += 1;
+  updatedParticipants[winnerTeam.driveId].score.playedOfficialMatches += 1;
+  updatedParticipants[winnerTeam.reversId].score.playedOfficialMatches += 1;
+
+  updatedParticipants[looserTeam.driveId].score.winOfficialMatches += 0;
+  updatedParticipants[looserTeam.reversId].score.winOfficialMatches += 0;
+  updatedParticipants[looserTeam.driveId].score.playedOfficialMatches += 1;
+  updatedParticipants[looserTeam.reversId].score.playedOfficialMatches += 1;
 };

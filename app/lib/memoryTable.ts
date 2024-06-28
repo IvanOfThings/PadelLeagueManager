@@ -44,9 +44,11 @@ export class MemoryTable {
     player2: string,
     isGuest: boolean = false,
   ): number {
-    if (isGuest) return 0;
     const matches = this.data.get(player1)?.get(player2) ?? 0;
-    return this.coefficients.get(matches) ?? 10;
+    const score =
+      ((this.coefficients.get(matches) ?? 10) * 1000 + 1) /
+      (this.getAmountOfMatches(player1) + this.getAmountOfMatches(player2) + 1);
+    return isGuest ? score / 1000 : score;
   }
 
   public getMaxScore(

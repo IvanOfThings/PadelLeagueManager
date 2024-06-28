@@ -72,7 +72,7 @@ export const buildMatchesFromList12Elements = ({
     [
       3,
       [
-        [0, 5, 6, 7, 8, 9, 10, 11],
+        [0, 1, 6, 7, 8, 9, 10, 11],
         [2, 3, 4, 5],
       ],
     ],
@@ -186,18 +186,22 @@ export const buildMatchesFromList = ({
   });
   sortedPlayers.reverse();
 
-  const initialSolution = buildInitialSolution(sortedPlayers);
   const matches: { matches: Match[]; score: number }[] = [];
   for (let iterRounds = 0; iterRounds < rounds; iterRounds++) {
+    const sortedPlayers = sortPlayersByMatchesPlayed({ players, playWith });
+    const initialSolution = buildInitialSolution2(sortedPlayers);
     const { solution, score } = generateMatching({
       initialSolution,
       playAgainst,
       playWith,
       players: sortedPlayers,
     });
+    console.log(
+      'solution',
+      solution.map((it) => it),
+    );
     const round = new Array<Match>();
     for (let j = 0; j < solution.length; j += 4) {
-      const sortedPlayers = sortPlayersByMatchesPlayed({ players, playWith });
       const driveLocal = solution[j];
       const reverseLocal = solution[j + 1];
       const driveVisitor = solution[j + 2];
@@ -227,6 +231,28 @@ export const buildMatchesFromList = ({
     matches.push({ matches: round, score });
   }
   return matches;
+};
+
+export const buildInitialSolution2 = (
+  sortedSolution: UserParticipantWithMatches[],
+) => {
+  const initialSolution: UserParticipantWithMatches[] = [];
+  const guest = sortedSolution.filter((player) => player.guest);
+  const nonGuest = sortedSolution.filter((player) => !player.guest);
+  const amountOfMatchesWithNoGuest = Math.floor(
+    (sortedSolution.length - guest.length) / 4,
+  );
+  for (let i = 0; i < amountOfMatchesWithNoGuest; i++) {
+    initialSolution.push(nonGuest[i * 2]);
+    initialSolution.push(nonGuest[i * 2 + 1]);
+    initialSolution.push(nonGuest[nonGuest.length - 1 - i * 2]);
+    initialSolution.push(nonGuest[nonGuest.length - 2 - i * 2]);
+  }
+  const tempInitialSolution = initialSolution.map((player) => player.id);
+  const rest = nonGuest.filter(
+    (player) => !tempInitialSolution.includes(player.id),
+  );
+  return [...initialSolution, ...rest, ...guest];
 };
 
 export const buildInitialSolution = (
@@ -370,7 +396,12 @@ export const sortPlayersByMatchesPlayed = ({
     }
     const aMatches = a.playedMatches;
     const bMatches = b.playedMatches;
-    return aMatches - bMatches;
+    const diff = aMatches - bMatches;
+    // If both players have the same amount of matches, sort randomly
+    if (diff === 0) {
+      return Math.random() - 0.5;
+    }
+    return diff;
   });
 };
 
@@ -431,7 +462,7 @@ const branchAndBound12 = ({
       players: players4,
     });
 
-    if (score4 + score8 > result.score) {
+    if (score4 + score8 >= result.score) {
       result.solution8 = solution8;
       result.solution4 = solution4;
       result.elements8 = elements8;

@@ -68,7 +68,9 @@ export class MemoryTable {
   }
 
   public getAmountOfMatches(player: string): number {
-    return this.data.get(player)?.size ?? 0;
+    // sum all the amount of matches that the player has played with all the other players
+    const playerMatches = this.data.get(player) ?? new Map<string, number>();
+    return [...playerMatches.values()].reduce((acc, curr) => acc + curr, 0);
   }
 
   public ToString(): string {

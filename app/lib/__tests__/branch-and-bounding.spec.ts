@@ -5,11 +5,19 @@ import {
   UserParticipantWithMatches,
 } from '../definitions';
 import {
-  buildCacheKey,
   buildCachesAndPlayersList,
   buildMatchesFromList,
   buildMatchesFromList12Elements,
   buildMemoryTables,
+  sortPlayersByMatchesPlayed,
+  updateCaches,
+} from '../branch-and-bounding';
+import { NodeItem, createMinPriorityQueue } from '../maxPriorityQueue';
+import { MemoryTableWith } from '../memoryTableWith';
+import { MemoryTableAgainst } from '../memoryTableAgainst';
+import { MemoryTable } from '../memoryTable';
+import {
+  buildCacheKey,
   buildUsersMatchList,
   estimatePartialSolutionWeight,
   expand,
@@ -20,13 +28,7 @@ import {
   scoreMatch,
   scorePlayer,
   sortArrayForPlayer,
-  sortPlayersByMatchesPlayed,
-  updateCaches,
-} from '../branch-and-bounding';
-import { NodeItem, createMinPriorityQueue } from '../maxPriorityQueue';
-import { MemoryTableWith } from '../memoryTableWith';
-import { MemoryTableAgainst } from '../memoryTableAgainst';
-import { MemoryTable } from '../memoryTable';
+} from '../dao/branch-and-bounding-utils';
 
 const getMockUser = (id: number, guest = false): UserParticipant => {
   return {
@@ -1382,7 +1384,7 @@ describe('Branch and Bounding', () => {
       const matches = buildMatchesFromList12Elements({
         players,
         leagueId: '1',
-        playersCount: 8,
+        playersCount: 12,
         rounds: 3,
         date: new Date(),
         playedMatches,

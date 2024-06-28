@@ -11,7 +11,7 @@ import {
   LeagueParticipant,
   UserParticipant,
 } from './definitions';
-import { formatCurrency, sortParticipants } from './utils';
+import { formatCurrency, rankParticipantsByMatches } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import prisma from './prisma';
 import { auth } from '@/auth';
@@ -283,7 +283,7 @@ export async function fetchLeagueRaking(
   const league = await fetchLeagueById(leagueId);
   const participants = await fetchLeagueParticipants(leagueId, true);
 
-  const sortedParticipants = sortParticipants(
+  const sortedParticipants = rankParticipantsByMatches(
     Object.values(participants),
     true,
   );
@@ -297,7 +297,7 @@ export async function fetchLeagueAndParticipants(
   const league = await fetchLeagueById(leagueId);
   const participants = await fetchLeagueParticipants(leagueId);
 
-  const sortedParticipants = sortParticipants(
+  const sortedParticipants = rankParticipantsByMatches(
     Object.values(participants),
     false,
   );

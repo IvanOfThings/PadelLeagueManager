@@ -2,7 +2,7 @@ import { MemoryTable } from './memoryTable';
 
 export class MemoryTableWith extends MemoryTable {
   constructor(weights?: number[]) {
-    super(weights ? weights : [150, 130, 25, 15, 0]);
+    super(weights ? weights : [250, 150, 25, 15, 0]);
   }
 
   public getScore(
